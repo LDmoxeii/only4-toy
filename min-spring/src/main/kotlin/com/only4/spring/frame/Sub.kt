@@ -1,10 +1,9 @@
-package com.only4.spring
+package com.only4.spring.frame
 
-import com.only4.spring.annotation.Autowired
-import com.only4.spring.annotation.Component
-import com.only4.spring.annotation.PostConstruct
-import com.only4.spring.core.ApplicationContext
-import com.only4.spring.processor.BeanPostProcessor
+import com.only4.spring.frame.annotation.Autowired
+import com.only4.spring.frame.annotation.Component
+import com.only4.spring.frame.annotation.PostConstruct
+import com.only4.spring.frame.processor.BeanPostProcessor
 
 @Component(name = "mydog")
 class Dog {
@@ -42,6 +41,4 @@ class MyBeanPostProcessor : BeanPostProcessor {
     }
 }
 
-fun main() {
-    ApplicationContext("com.only4.spring")
-}
+

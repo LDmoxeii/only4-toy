@@ -1,4 +1,4 @@
-package com.only4.spring.processor
+package com.only4.spring.frame.processor
 
 interface BeanPostProcessor {
 

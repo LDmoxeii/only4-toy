@@ -1,7 +1,7 @@
-package com.only4.spring.core
+package com.only4.spring.frame.core
 
-import com.only4.spring.annotation.Component
-import com.only4.spring.processor.BeanPostProcessor
+import com.only4.spring.frame.annotation.Component
+import com.only4.spring.frame.processor.BeanPostProcessor
 import java.io.File
 
 class ApplicationContext(packageName: String) {

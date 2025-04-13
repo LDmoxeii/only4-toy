@@ -1,8 +1,8 @@
-package com.only4.spring.core
+package com.only4.spring.frame.core
 
-import com.only4.spring.annotation.Autowired
-import com.only4.spring.annotation.Component
-import com.only4.spring.annotation.PostConstruct
+import com.only4.spring.frame.annotation.Autowired
+import com.only4.spring.frame.annotation.Component
+import com.only4.spring.frame.annotation.PostConstruct
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
 import java.lang.reflect.Method
