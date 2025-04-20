@@ -11,6 +11,8 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
+    // https://mvnrepository.com/artifact/cn.hutool/hutool-core
+    implementation("cn.hutool:hutool-core:5.8.37")
 }
 
 tasks.test {

@@ -1,5 +1,7 @@
 package com.only4.algorithm.leetcode
 
+import com.only4.algorithm.extra.ListNode
+
 fun addTwoNumbers(l1: ListNode?, l2: ListNode?): ListNode? {
     var (h1, h2) = l1 to l2
     var carry = 0

@@ -1,24 +1,22 @@
 package com.only4.algorithm.leetcode
 
-class ListNode(var `val`: Int) {
-    var next: ListNode? = null
-}
+import com.only4.algorithm.extra.ListNode
 
 fun mergeTwoLists(list1: ListNode?, list2: ListNode?): ListNode? {
-    val dummy = ListNode(0)
-    var head = dummy
-    var l1 = list1
-    var l2 = list2
+    ListNode(0).let { dummy ->
+        var head = dummy
+        var (p1, p2) = list1 to list2
 
-    while (l1 != null && l2 != null) {
-        head =
-            (if (l1.`val` < l2.`val`) head.next = l1.also { l1 = it.next }
-            else head.next = l2.also { l2 = it.next })
-                .run { head.next!! }
+        while (p1 != null && p2 != null) {
+            head = when {
+                p1.`val` < p2.`val` -> head.next = p1.apply { p1 = next }
+                else -> head.next = p2.apply { p2 = next }
+            }.run { head.next!! }
+        }
+        head.next = p1 ?: p2
+
+        return dummy.next
     }
-    head.next = l1 ?: l2
-
-    return dummy.next
 }
 
 fun main() {

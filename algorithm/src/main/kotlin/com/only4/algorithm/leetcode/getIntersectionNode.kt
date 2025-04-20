@@ -1,13 +1,17 @@
 package com.only4.algorithm.leetcode
 
-fun getIntersectionNode(headA:ListNode?, headB:ListNode?):ListNode? {
-    var (nodeA, nodeB) = headA to headB
-    while (nodeA !== nodeB) {
-        nodeA = if (nodeA == null) headB
-        else nodeA.next
+import com.only4.algorithm.extra.ListNode
 
-        nodeB = if (nodeB == null) headA
-        else nodeB.next
+fun getIntersectionNode(headA:ListNode?, headB:ListNode?):ListNode? {
+    var (pA, pB) = headA to headB
+    while (pA !== pB) {
+        // pA 走一步 走到末尾 链接 B链表
+        pA = if (pA == null) headB
+             else            pA.next
+
+        // pB 走一步 走到末尾 链接 A链表
+        pB = if (pB == null) headA
+             else            pB.next
     }
-    return nodeA
+    return pA
 }

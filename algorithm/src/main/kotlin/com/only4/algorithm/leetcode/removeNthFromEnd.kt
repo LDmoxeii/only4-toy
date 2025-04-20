@@ -1,18 +1,23 @@
 package com.only4.algorithm.leetcode
 
+import com.only4.algorithm.extra.ListNode
+
 fun removeNthFromEnd(head: ListNode?, n: Int): ListNode? {
-    ListNode(0).apply { next = head }.let { dummy ->
-        var slow = dummy
-        var fast = dummy as ListNode?
-
-        repeat(n + 1) { fast = fast?.next }
-
-        while (fast != null) {
-            slow = slow.next!!
-            fast = fast.next
+    ListNode(-1).apply { next = head }.let { dummy ->
+        fun findFromEnd(head: ListNode, k: Int): ListNode {
+            var pA = head as ListNode?
+            repeat(k) { pA = pA!!.next }
+            var pB = head
+            while (pA != null) {
+                pB = pB.next!!
+                pA = pA.next
+            }
+            return pB
         }
+        // 删除倒数第 n 个 先找到倒数第 n + 1 个节点
+        val x = findFromEnd(dummy, n + 1)
 
-        slow.next = slow.next?.next
+        x.next = x.next?.next
         return dummy.next
     }
 }

@@ -1,5 +1,7 @@
 package com.only4.algorithm.leetcode
 
+import com.only4.algorithm.extra.ListNode
+
 fun reverseKGroup(head: ListNode?, k: Int): ListNode? {
     val dummy = ListNode(0).apply { next = head }
     var counter = head

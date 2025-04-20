@@ -1,28 +1,35 @@
 package com.only4.algorithm.leetcode
 
 fun minWindow(s: String, t: String): String {
-    var (finalLeft, finalRight) = -1 to s.length
-    var left = 0
+    val checker = mutableMapOf<Char, Int>().withDefault { 0 }
+    val window = mutableMapOf<Char, Int>().withDefault { 0 }
+    t.forEach { checker.put(it, checker.getValue(it) + 1) }
 
-    var builder = mutableMapOf<Char, Int>().withDefault { 0 }
-    val checker = t.groupingBy { it }.eachCount()
+    var (left, right) = 0 to 0
+    var valid = 0
+    var (start, len) = 0 to Int.MAX_VALUE
+    while (right < s.length) {
+        val c = s[right++]
+        if (checker.containsKey(c)) {
+            window.put(c, window.getValue(c) + 1)
+            if (window[c] == checker[c]) valid++
+        }
 
-    s.forEachIndexed { right, it ->
-        builder[it] = builder.getValue(it) + 1
-        while (checker.all { (char, count) -> builder.getValue(char) >= count }) {
-            if (finalRight - finalLeft > right - left) {
-                finalRight = right
-                finalLeft = left
+        while (valid == checker.size) {
+            if (right - left < len)
+                len = right - left.also { start = it }
+            val d = s[left++]
+            if (checker.containsKey(d)) {
+                if (window[d] == checker[d]) valid--
+                window.put(d, window.getValue(d) - 1)
             }
-            builder.put(s[left], builder[s[left++]]!! - 1)
         }
     }
-
-    return if (finalLeft < 0) "" else s.substring(finalLeft, finalRight + 1)
+    return if (len == Int.MAX_VALUE) "" else s.substring(start, start + len)
 }
 
 fun main() {
-    val s = "A"
-    val t = "AA"
+    val s = "ADOBECODEBANC"
+    val t = "ABC"
     println(minWindow(s, t))
 }

@@ -1,33 +1,27 @@
 package com.only4.algorithm.leetcode
 
-fun findAnagrams(s: String, p: String): List<Int> {
-    val result = mutableListOf<Int>()
+fun checkInclusion(s1: String, s2: String): Boolean {
     val checker = mutableMapOf<Char, Int>().withDefault { 0 }
     val window = mutableMapOf<Char, Int>().withDefault { 0 }
-    p.forEach { checker.put(it, checker.getValue(it) + 1) }
+    s1.forEach { checker.put(it, checker.getValue(it) + 1) }
 
     var (left, right) = 0 to 0
     var valid = 0
-    while (right < s.length) {
-        val c = s[right++]
+    while (right < s2.length) {
+        val c = s2[right++]
         if (checker.containsKey(c)) {
             window.put(c, window.getValue(c) + 1)
             if (window[c] == checker[c]) valid++
         }
-        while (right - left >= p.length) {
-            if (valid == checker.size) result.add(left)
-            val d = s[left++]
+
+        while (right - left >= s1.length) {
+            if (valid == checker.size) return true
+            val d = s2[left++]
             if (checker.containsKey(d)) {
                 if (window[d] == checker[d]) valid--
                 window.put(d, window.getValue(d) - 1)
             }
         }
     }
-    return result
-}
-
-fun main() {
-    val s = "baa"
-    val p = "aa"
-    println(findAnagrams(s, p))
+    return false
 }

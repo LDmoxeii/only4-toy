@@ -1,5 +1,7 @@
 package com.only4.algorithm.leetcode
 
+import com.only4.algorithm.extra.ListNode
+
 fun swapPairs(head: ListNode?): ListNode? {
     if (head?.next == null) return head
 
