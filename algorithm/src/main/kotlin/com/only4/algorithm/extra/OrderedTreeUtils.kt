@@ -69,7 +69,7 @@ object OrderedTreeUtils {
      */
     private fun <K, V> buildChildrenTree(
         parentNode: OrderedTreeNode<K, V>,
-        parentChildMap: Map<K?, List<OrderedTreeNode<K, V>>>
+        parentChildMap: Map<K, List<OrderedTreeNode<K, V>>>
     ) {
         val childNodes = parentChildMap[parentNode.key] ?: return
 
@@ -129,7 +129,7 @@ object OrderedTreeUtils {
         flattenTreeInternal(treeList, result)
         return result.sortedBy { it.sort }
     }
-    
+
     /**
      * 将树形结构转换为扁平列表，支持深度优先和广度优先遍历
      *
@@ -148,7 +148,7 @@ object OrderedTreeUtils {
             TraversalType.BREADTH_FIRST -> flattenTreeBreadthFirst(treeList)
         }
     }
-    
+
     /**
      * 使用深度优先遍历将树形结构转换为扁平列表
      */
@@ -159,7 +159,7 @@ object OrderedTreeUtils {
         flattenTreeInternal(treeList, result)
         return result
     }
-    
+
     /**
      * 使用广度优先遍历将树形结构转换为扁平列表
      */
@@ -168,17 +168,17 @@ object OrderedTreeUtils {
     ): List<OrderedTreeNode<K, V>> {
         val result = mutableListOf<OrderedTreeNode<K, V>>()
         val queue = ArrayDeque<OrderedTreeNode<K, V>>()
-        
+
         // 添加所有根节点到队列
         queue.addAll(treeList)
-        
+
         // 广度优先遍历
         while (queue.isNotEmpty()) {
             val node = queue.removeFirst()
             result.add(node)
             queue.addAll(node.children)
         }
-        
+
         return result
     }
 
@@ -190,7 +190,7 @@ object OrderedTreeUtils {
          * 深度优先遍历
          */
         DEPTH_FIRST,
-        
+
         /**
          * 广度优先遍历
          */
@@ -288,7 +288,7 @@ object OrderedTreeUtils {
     fun <K, V, T> buildTreeFromList(
         dataList: Collection<T>,
         keyExtractor: (T) -> K,
-        parentKeyExtractor: (T) -> K?,
+        parentKeyExtractor: (T) -> K,
         dataExtractor: (T) -> V,
         isRoot: (T) -> Boolean
     ): List<OrderedTreeNode<K, V>> {
@@ -377,7 +377,7 @@ object OrderedTreeUtils {
     fun <K, V, T> buildTreeFromListByRootKey(
         dataList: Collection<T>,
         keyExtractor: (T) -> K,
-        parentKeyExtractor: (T) -> K?,
+        parentKeyExtractor: (T) -> K,
         dataExtractor: (T) -> V,
         rootParentKey: K?
     ): List<OrderedTreeNode<K, V>> {

@@ -11,13 +11,13 @@ interface OrderedTreeNode<K, V> {
     val key: K
 
     /** 父节点唯一键 */
-    val parentKey: K?
+    var parentKey: K
 
-    /** 节点排序值，规则为：父节点排序 * 100 + 同级节点排序号递增 */
-    val sort: Long
+    /** 节点排序值 */
+    var sort: Long
 
     /** 节点路径，格式为 "parent.key/this.key" */
-    val nodePath: String
+    var nodePath: String
 
     /** 节点数据 */
     val data: V
@@ -41,7 +41,7 @@ interface OrderedMultipleTree<K, V> {
      * @param data 节点数据
      * @return 添加的节点
      */
-    fun addNode(key: K, parentKey: K?, data: V): OrderedTreeNode<K, V>
+    fun addNode(key: K, parentKey: K, data: V): OrderedTreeNode<K, V>
 
     /**
      * 添加节点（指定排序值）
@@ -52,7 +52,7 @@ interface OrderedMultipleTree<K, V> {
      * @param sort 指定的排序值, 同级节点排序号, 需要配合父节点  规则为：父节点排序 * 100 + 同级节点排序号递增
      * @return 添加的节点
      */
-    fun addNode(key: K, parentKey: K?, data: V, sort: Long): OrderedTreeNode<K, V>
+    fun addNode(key: K, parentKey: K, data: V, sort: Long): OrderedTreeNode<K, V>
 
     /**
      * 删除节点
@@ -76,7 +76,7 @@ interface OrderedMultipleTree<K, V> {
      * @param parentKey 父节点键
      * @return 子节点列表
      */
-    fun findNodesByParentKey(parentKey: K?): List<OrderedTreeNode<K, V>>
+    fun getChildren(parentKey: K): List<OrderedTreeNode<K, V>>
 
     /**
      * 根据节点路径查找所有子孙节点
@@ -84,7 +84,7 @@ interface OrderedMultipleTree<K, V> {
      * @param nodePath 节点路径
      * @return 子孙节点列表
      */
-    fun findNodesByPath(nodePath: String): List<OrderedTreeNode<K, V>>
+    fun getDescendants(nodePath: String): List<OrderedTreeNode<K, V>>
 }
 
 /**
@@ -95,7 +95,7 @@ interface OrderedMultipleTree<K, V> {
  */
 data class DefaultOrderedTreeNode<K, V>(
     override val key: K,
-    override val parentKey: K?,
+    override var parentKey: K,
     override var sort: Long,
     override var nodePath: String,
     override val data: V,
@@ -113,11 +113,11 @@ abstract class AbstractOrderedMultipleTree<K, V> : OrderedMultipleTree<K, V> {
     // 存储所有节点的映射，便于快速查找
     protected val nodeMap: MutableMap<K, OrderedTreeNode<K, V>> = mutableMapOf()
 
+    // 存储路径到节点的映射
+    protected val pathNodeMap: MutableMap<String, OrderedTreeNode<K, V>> = mutableMapOf()
+
     // 存储父节点到子节点的映射
     protected val parentChildMap: MutableMap<K?, MutableList<OrderedTreeNode<K, V>>> = mutableMapOf()
-
-    // 存储路径到节点的映射
-    protected val pathNodeMap: MutableMap<String, MutableList<OrderedTreeNode<K, V>>> = mutableMapOf()
 
     /**
      * 生成节点路径
@@ -126,7 +126,7 @@ abstract class AbstractOrderedMultipleTree<K, V> : OrderedMultipleTree<K, V> {
      * @param parentKey 父节点键
      * @return 节点路径
      */
-    protected abstract fun generateNodePath(key: K, parentKey: K?): String
+    protected abstract fun generateNodePath(key: K, parentKey: K): String
 
     /**
      * 计算新节点的排序值
@@ -134,15 +134,16 @@ abstract class AbstractOrderedMultipleTree<K, V> : OrderedMultipleTree<K, V> {
      * @param parentKey 父节点键
      * @return 新的排序值
      */
-    protected abstract fun calculateNextSort(parentKey: K?): Int
+    protected abstract fun calculateNextSort(parentKey: K): Long
 
     /**
-     * 重新排序子节点，解决排序冲突
+     * 处理排序冲突
+     *
      *
      * @param parentKey 父节点键
      * @param startSort 开始排序值
      */
-    protected abstract fun reorderChildren(parentKey: K?, startSort: Int)
+    protected abstract fun handleSortConflict(parentKey: K, startSort: Long)
 
     /**
      * 子节点向前移动排序
@@ -150,7 +151,7 @@ abstract class AbstractOrderedMultipleTree<K, V> : OrderedMultipleTree<K, V> {
      * @param parentKey 父节点键
      * @param removedSort 被移除节点的排序值
      */
-    protected abstract fun moveChildrenForward(parentKey: K?, removedSort: Int)
+    protected abstract fun moveChildrenForward(parentKey: K, removedSort: Long)
 
     /**
      * 递归删除节点及其所有子孙节点
@@ -163,21 +164,15 @@ abstract class AbstractOrderedMultipleTree<K, V> : OrderedMultipleTree<K, V> {
         return nodeMap[key]
     }
 
-    override fun findNodesByParentKey(parentKey: K?): List<OrderedTreeNode<K, V>> {
+    override fun getChildren(parentKey: K): List<OrderedTreeNode<K, V>> {
         return parentChildMap[parentKey]?.sortedBy { it.sort } ?: emptyList()
     }
 
-    override fun findNodesByPath(nodePath: String): List<OrderedTreeNode<K, V>> {
-        val result = mutableListOf<OrderedTreeNode<K, V>>()
-
-        // 找到以指定路径开头的所有节点
-        pathNodeMap.forEach { (path, nodes) ->
-            if (path.startsWith(nodePath)) {
-                result.addAll(nodes)
-            }
-        }
-
-        return result.sortedBy { it.sort }
+    override fun getDescendants(nodePath: String): List<OrderedTreeNode<K, V>> {
+        return pathNodeMap
+            .filter { (key, _) -> key.startsWith(nodePath) }
+            .map { (_, value) -> value }
+            .sortedBy { it.sort }
     }
 }
 
@@ -206,4 +201,42 @@ interface SortingMultipleTree<K, V> : OrderedMultipleTree<K, V> {
      * @return 扁平化的节点列表
      */
     fun flattenTree(): List<OrderedTreeNode<K, V>>
+
+    /**
+     * 移动节点到新的父节点下
+     *
+     * @param key 要移动的节点键
+     * @param newParentKey 新的父节点键
+     * @param newSort 可选的新排序值，如果为null则自动计算
+     * @return 移动后的节点，如果移动失败则返回null
+     */
+    fun moveNode(key: K, newParentKey: K, newSort: Long? = null): OrderedTreeNode<K, V>?
+
+    /**
+     * 移动节点到新的父节点下
+     *
+     * @param node 要移动的节点对象
+     * @param newParentKey 新的父节点键
+     * @param newSort 可选的新排序值，如果为null则自动计算
+     * @return 移动后的节点，如果移动失败则返回null
+     */
+    fun moveNode(node: OrderedTreeNode<K, V>, newParentKey: K, newSort: Long? = null): OrderedTreeNode<K, V>
+
+    /**
+     * 批量移动节点到新的父节点下
+     *
+     * @param keys 要移动的节点键集合
+     * @param newParentKey 新的父节点键
+     * @return 移动后的节点列表
+     */
+    fun moveNodes(keys: Collection<K>, newParentKey: K): List<OrderedTreeNode<K, V>>
+
+    /**
+     * 通过节点路径移动节点
+     *
+     * @param nodePath 要移动的节点路径
+     * @param newParentPath 新的父节点路径
+     * @return 移动后的节点，如果移动失败则返回null
+     */
+    fun moveNodeByPath(nodePath: String, newParentPath: String): OrderedTreeNode<K, V>
 }

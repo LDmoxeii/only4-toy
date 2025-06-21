@@ -17,8 +17,8 @@ class OrderedTreeUtilsTest {
         @Test
         fun `根据节点列表构建树 - 使用自定义判断函数`() {
             // 准备测试数据
-            val node1 = DefaultOrderedTreeNode("1", null, 1L, "1", "根节点1")
-            val node2 = DefaultOrderedTreeNode("2", null, 2L, "2", "根节点2")
+            val node1 = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根节点1")
+            val node2 = DefaultOrderedTreeNode("2", "dummy", 2L, "2", "根节点2")
             val node3 = DefaultOrderedTreeNode("3", "1", 101L, "1/3", "子节点3")
             val node4 = DefaultOrderedTreeNode("4", "1", 102L, "1/4", "子节点4")
             val node5 = DefaultOrderedTreeNode("5", "2", 201L, "2/5", "子节点5")
@@ -27,7 +27,7 @@ class OrderedTreeUtilsTest {
             val nodeList = listOf(node1, node2, node3, node4, node5, node6)
 
             // 使用自定义根节点判断函数构建树
-            val rootNodes = OrderedTreeUtils.buildTree(nodeList) { it.parentKey == null }
+            val rootNodes = OrderedTreeUtils.buildTree(nodeList) { it.parentKey == "dummy" }
 
             // 验证结果
             assertEquals(2, rootNodes.size)
@@ -79,7 +79,7 @@ class OrderedTreeUtilsTest {
         @Test
         fun `处理空节点列表`() {
             val emptyList = emptyList<OrderedTreeNode<String, String>>()
-            val result = OrderedTreeUtils.buildTree(emptyList) { it.parentKey == null }
+            val result = OrderedTreeUtils.buildTree(emptyList) { it.parentKey == "dummy" }
             assertTrue(result.isEmpty())
         }
 
@@ -90,7 +90,7 @@ class OrderedTreeUtilsTest {
             val node2 = DefaultOrderedTreeNode("2", "parent", 2L, "2", "节点2")
 
             val nodeList = listOf(node1, node2)
-            val result = OrderedTreeUtils.buildTree(nodeList) { it.parentKey == null }
+            val result = OrderedTreeUtils.buildTree(nodeList) { it.parentKey == "dummy" }
             assertTrue(result.isEmpty())
         }
 
@@ -100,10 +100,10 @@ class OrderedTreeUtilsTest {
             val nodeA = DefaultOrderedTreeNode("A", "C", 1L, "A", "节点A")
             val nodeB = DefaultOrderedTreeNode("B", "A", 2L, "B", "节点B")
             val nodeC = DefaultOrderedTreeNode("C", "B", 3L, "C", "节点C")
-            val nodeRoot = DefaultOrderedTreeNode("root", null, 0L, "root", "根节点")
+            val nodeRoot = DefaultOrderedTreeNode("root", "dummy", 0L, "root", "根节点")
 
             val nodeList = listOf(nodeA, nodeB, nodeC, nodeRoot)
-            val result = OrderedTreeUtils.buildTree(nodeList) { it.parentKey == null }
+            val result = OrderedTreeUtils.buildTree(nodeList) { it.parentKey == "dummy" }
 
             // 验证只有根节点被正确处理
             assertEquals(1, result.size)
@@ -115,8 +115,8 @@ class OrderedTreeUtilsTest {
         @Test
         fun `处理复杂树结构 - 具有多级子节点`() {
             // 构建一个较复杂的树结构，包含多级子节点
-            val root1 = DefaultOrderedTreeNode("root1", null, 1L, "root1", "根1")
-            val root2 = DefaultOrderedTreeNode("root2", null, 2L, "root2", "根2")
+            val root1 = DefaultOrderedTreeNode("root1", "dummy", 1L, "root1", "根1")
+            val root2 = DefaultOrderedTreeNode("root2", "dummy", 2L, "root2", "根2")
 
             val child1 = DefaultOrderedTreeNode("child1", "root1", 101L, "root1/child1", "子1")
             val child2 = DefaultOrderedTreeNode("child2", "root1", 102L, "root1/child2", "子2")
@@ -134,7 +134,7 @@ class OrderedTreeUtilsTest {
                 child1, root1, grandchild3, child3, grandchild2
             )
 
-            val result = OrderedTreeUtils.buildTree(nodeList) { it.parentKey == null }
+            val result = OrderedTreeUtils.buildTree(nodeList) { it.parentKey == "dummy" }
 
             // 验证根节点
             assertEquals(2, result.size)
@@ -171,8 +171,8 @@ class OrderedTreeUtilsTest {
         fun `从列表构建树 - 使用自定义判断函数`() {
             // 准备测试数据
             val items = listOf(
-                TestItem("1", null, "根节点1"),
-                TestItem("2", null, "根节点2"),
+                TestItem("1", "dummy", "根节点1"),
+                TestItem("2", "dummy", "根节点2"),
                 TestItem("3", "1", "子节点3"),
                 TestItem("4", "1", "子节点4"),
                 TestItem("5", "2", "子节点5"),
@@ -185,7 +185,7 @@ class OrderedTreeUtilsTest {
                 { it.id },
                 { it.parentId },
                 { it.name },
-                { it.parentId == null }
+                { it.parentId == "dummy" }
             )
 
             // 验证结果
@@ -269,7 +269,7 @@ class OrderedTreeUtilsTest {
                 { it.id },
                 { it.parentId },
                 { it.name },
-                { it.parentId == null }
+                { it.parentId == "dummy" }
             )
             assertTrue(result.isEmpty())
         }
@@ -281,7 +281,7 @@ class OrderedTreeUtilsTest {
                 TestItem("A", "C", "节点A"),
                 TestItem("B", "A", "节点B"),
                 TestItem("C", "B", "节点C"),
-                TestItem("root", null, "根节点")
+                TestItem("root", "dummy", "根节点")
             )
 
             val result = OrderedTreeUtils.buildTreeFromList(
@@ -289,7 +289,7 @@ class OrderedTreeUtilsTest {
                 { it.id },
                 { it.parentId },
                 { it.name },
-                { it.parentId == null }
+                { it.parentId == "dummy" }
             )
 
             // 验证只有根节点被正确处理
@@ -310,8 +310,8 @@ class OrderedTreeUtilsTest {
             )
 
             val items = listOf(
-                ComplexItem(1, null, "Root1", mapOf("type" to "folder", "created" to "2023-01-01")),
-                ComplexItem(2, null, "Root2", mapOf("type" to "folder", "created" to "2023-01-02")),
+                ComplexItem(1, 0, "Root1", mapOf("type" to "folder", "created" to "2023-01-01")),
+                ComplexItem(2, 0, "Root2", mapOf("type" to "folder", "created" to "2023-01-02")),
                 ComplexItem(3, 1, "Child1", mapOf("type" to "file", "size" to 100)),
                 ComplexItem(4, 1, "Child2", mapOf("type" to "folder", "created" to "2023-01-03")),
                 ComplexItem(5, 2, "Child3", mapOf("type" to "file", "size" to 200)),
@@ -323,7 +323,7 @@ class OrderedTreeUtilsTest {
                 { it.id },
                 { it.parentId },
                 { it.attributes + ("name" to it.name) },
-                { it.parentId == null }
+                { it.parentId == 0 }
             )
 
             // 验证结果
@@ -353,8 +353,8 @@ class OrderedTreeUtilsTest {
         @Test
         fun `通过键查找节点`() {
             // 构建测试树
-            val root1 = DefaultOrderedTreeNode("1", null, 1L, "1", "根1")
-            val root2 = DefaultOrderedTreeNode("2", null, 2L, "2", "根2")
+            val root1 = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根1")
+            val root2 = DefaultOrderedTreeNode("2", "dummy", 2L, "2", "根2")
             val child1 = DefaultOrderedTreeNode("3", "1", 101L, "1/3", "子1")
             val child2 = DefaultOrderedTreeNode("4", "1", 102L, "1/4", "子2")
             val grandchild = DefaultOrderedTreeNode("5", "3", 10101L, "1/3/5", "孙1")
@@ -380,8 +380,8 @@ class OrderedTreeUtilsTest {
         @Test
         fun `通过路径查找节点`() {
             // 构建测试树
-            val root1 = DefaultOrderedTreeNode("1", null, 1L, "1", "根1")
-            val root2 = DefaultOrderedTreeNode("2", null, 2L, "2", "根2")
+            val root1 = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根1")
+            val root2 = DefaultOrderedTreeNode("2", "dummy", 2L, "2", "根2")
             val child1 = DefaultOrderedTreeNode("3", "1", 101L, "1/3", "子1")
             val child2 = DefaultOrderedTreeNode("4", "1", 102L, "1/4", "子2")
             val grandchild = DefaultOrderedTreeNode("5", "3", 10101L, "1/3/5", "孙1")
@@ -412,8 +412,8 @@ class OrderedTreeUtilsTest {
         @Test
         fun `将树扁平化为列表`() {
             // 构建测试树
-            val root1 = DefaultOrderedTreeNode("1", null, 1L, "1", "根1")
-            val root2 = DefaultOrderedTreeNode("2", null, 2L, "2", "根2")
+            val root1 = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根1")
+            val root2 = DefaultOrderedTreeNode("2", "dummy", 2L, "2", "根2")
             val child1 = DefaultOrderedTreeNode("3", "1", 101L, "1/3", "子1")
             val child2 = DefaultOrderedTreeNode("4", "1", 102L, "1/4", "子2")
             val child3 = DefaultOrderedTreeNode("5", "2", 201L, "2/5", "子3")
@@ -443,22 +443,22 @@ class OrderedTreeUtilsTest {
         @Test
         fun `深度优先遍历扁平化树`() {
             // 构建测试树
-            val root1 = DefaultOrderedTreeNode("1", null, 1L, "1", "根1")
+            val root1 = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根1")
             val child1 = DefaultOrderedTreeNode("2", "1", 101L, "1/2", "子1")
             val child2 = DefaultOrderedTreeNode("3", "1", 102L, "1/3", "子2")
             val grandchild1 = DefaultOrderedTreeNode("4", "2", 10101L, "1/2/4", "孙1")
             val grandchild2 = DefaultOrderedTreeNode("5", "3", 10201L, "1/3/5", "孙2")
-            
+
             // 构建树结构
             root1.children.addAll(listOf(child1, child2))
             child1.children.add(grandchild1)
             child2.children.add(grandchild2)
-            
+
             val rootNodes = listOf(root1)
-            
+
             // 使用深度优先遍历扁平化
             val depthFirstList = OrderedTreeUtils.flattenTree(rootNodes, OrderedTreeUtils.TraversalType.DEPTH_FIRST)
-            
+
             // 验证结果 - 深度优先应该是：根1 -> 子1 -> 孙1 -> 子2 -> 孙2
             assertEquals(5, depthFirstList.size)
             assertEquals(root1, depthFirstList[0])
@@ -467,26 +467,26 @@ class OrderedTreeUtilsTest {
             assertEquals(child2, depthFirstList[3])
             assertEquals(grandchild2, depthFirstList[4])
         }
-        
+
         @Test
         fun `广度优先遍历扁平化树`() {
             // 构建测试树
-            val root1 = DefaultOrderedTreeNode("1", null, 1L, "1", "根1")
+            val root1 = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根1")
             val child1 = DefaultOrderedTreeNode("2", "1", 101L, "1/2", "子1")
             val child2 = DefaultOrderedTreeNode("3", "1", 102L, "1/3", "子2")
             val grandchild1 = DefaultOrderedTreeNode("4", "2", 10101L, "1/2/4", "孙1")
             val grandchild2 = DefaultOrderedTreeNode("5", "3", 10201L, "1/3/5", "孙2")
-            
+
             // 构建树结构
             root1.children.addAll(listOf(child1, child2))
             child1.children.add(grandchild1)
             child2.children.add(grandchild2)
-            
+
             val rootNodes = listOf(root1)
-            
+
             // 使用广度优先遍历扁平化
             val breadthFirstList = OrderedTreeUtils.flattenTree(rootNodes, OrderedTreeUtils.TraversalType.BREADTH_FIRST)
-            
+
             // 验证结果 - 广度优先应该是：根1 -> 子1 -> 子2 -> 孙1 -> 孙2
             assertEquals(5, breadthFirstList.size)
             assertEquals(root1, breadthFirstList[0])
@@ -495,7 +495,7 @@ class OrderedTreeUtilsTest {
             assertEquals(grandchild1, breadthFirstList[3])
             assertEquals(grandchild2, breadthFirstList[4])
         }
-        
+
         @Test
         fun `复杂树结构的不同遍历方式比较`() {
             // 构建一个更复杂的树结构
@@ -506,8 +506,8 @@ class OrderedTreeUtilsTest {
             //  D   E F   G
             //     /
             //    H
-            
-            val nodeA = DefaultOrderedTreeNode("A", null, 1L, "A", "节点A")
+
+            val nodeA = DefaultOrderedTreeNode("A", "dummy", 1L, "A", "节点A")
             val nodeB = DefaultOrderedTreeNode("B", "A", 101L, "A/B", "节点B")
             val nodeC = DefaultOrderedTreeNode("C", "A", 102L, "A/C", "节点C")
             val nodeD = DefaultOrderedTreeNode("D", "B", 10101L, "A/B/D", "节点D")
@@ -515,21 +515,21 @@ class OrderedTreeUtilsTest {
             val nodeF = DefaultOrderedTreeNode("F", "C", 10201L, "A/C/F", "节点F")
             val nodeG = DefaultOrderedTreeNode("G", "C", 10202L, "A/C/G", "节点G")
             val nodeH = DefaultOrderedTreeNode("H", "E", 1010201L, "A/B/E/H", "节点H")
-            
+
             // 构建树结构
             nodeA.children.addAll(listOf(nodeB, nodeC))
             nodeB.children.addAll(listOf(nodeD, nodeE))
             nodeC.children.addAll(listOf(nodeF, nodeG))
             nodeE.children.add(nodeH)
-            
+
             val rootNodes = listOf(nodeA)
-            
+
             // 深度优先遍历
             val depthFirstList = OrderedTreeUtils.flattenTree(rootNodes, OrderedTreeUtils.TraversalType.DEPTH_FIRST)
-            
+
             // 广度优先遍历
             val breadthFirstList = OrderedTreeUtils.flattenTree(rootNodes, OrderedTreeUtils.TraversalType.BREADTH_FIRST)
-            
+
             // 验证深度优先结果: A -> B -> D -> E -> H -> C -> F -> G
             assertEquals(8, depthFirstList.size)
             assertEquals(nodeA, depthFirstList[0])
@@ -540,7 +540,7 @@ class OrderedTreeUtilsTest {
             assertEquals(nodeC, depthFirstList[5])
             assertEquals(nodeF, depthFirstList[6])
             assertEquals(nodeG, depthFirstList[7])
-            
+
             // 验证广度优先结果: A -> B -> C -> D -> E -> F -> G -> H
             assertEquals(8, breadthFirstList.size)
             assertEquals(nodeA, breadthFirstList[0])
@@ -556,7 +556,7 @@ class OrderedTreeUtilsTest {
         @Test
         fun `获取节点及其所有子孙节点`() {
             // 构建测试树
-            val root = DefaultOrderedTreeNode("1", null, 1L, "1", "根1")
+            val root = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根1")
             val child1 = DefaultOrderedTreeNode("2", "1", 101L, "1/2", "子1")
             val child2 = DefaultOrderedTreeNode("3", "1", 102L, "1/3", "子2")
             val grandchild1 = DefaultOrderedTreeNode("4", "2", 10101L, "1/2/4", "孙1")
@@ -587,4 +587,4 @@ class OrderedTreeUtilsTest {
 }
 
 // 测试用的数据类
-data class TestItem(val id: String, val parentId: String?, val name: String)
+data class TestItem(val id: String, val parentId: String, val name: String)
