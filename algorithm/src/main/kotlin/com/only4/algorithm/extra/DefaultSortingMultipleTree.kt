@@ -10,9 +10,9 @@ class DefaultSortingMultipleTree<K, V>(
     // 根节点的虚拟父键标识
     private val dummyKey: K,
     // 路径分隔符
-    private val pathSeparator: String = "/",
+    val pathSeparator: String = "/",
     // 节点排序基数
-    private val sortBase: Long = 100L,
+    val sortBase: Long = 100L,
 ) : AbstractSortingMultipleTree<K, V>(), SortingMultipleTree<K, V> {
 
     /**
