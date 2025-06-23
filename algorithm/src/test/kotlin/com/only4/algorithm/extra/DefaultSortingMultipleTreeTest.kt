@@ -208,7 +208,7 @@ class DefaultSortingMultipleTreeTest {
             assertNull(tree.findNodeByKey("grandChild2"))
 
             // 验证节点总数
-            assertEquals(1, tree.getAllNodes().size)
+            assertEquals(1, tree.flattenTree().size)
         }
 
         @Test
@@ -228,8 +228,8 @@ class DefaultSortingMultipleTreeTest {
             assertNull(tree.findNodeByKey("child1"))
 
             // 只剩下root2节点
-            assertEquals(1, tree.getAllNodes().size)
-            assertEquals("root2", tree.getAllNodes()[0].key)
+            assertEquals(1, tree.flattenTree().size)
+            assertEquals("root2", tree.flattenTree()[0].key)
 
             // root2的排序值应该前移
             assertEquals(1L, root2.sort) // 原来是2，删除了1后前移变成1
@@ -347,7 +347,7 @@ class DefaultSortingMultipleTreeTest {
             val child1 = tree.addNode("child1", "root1", "子节点1")
             val grandChild1 = tree.addNode("grandChild1", "child1", "孙节点1")
 
-            val allNodes = tree.getAllNodes()
+            val allNodes = tree.flattenTree()
 
             // 验证所有节点都被返回
             assertEquals(4, allNodes.size)
@@ -515,7 +515,7 @@ class DefaultSortingMultipleTreeTest {
             }
 
             // 验证总节点数
-            val allNodes = tree.getAllNodes()
+            val allNodes = tree.flattenTree()
             assertEquals(1 + 10 + 10 * 5 + 10 * 5 * 1, allNodes.size) // 根节点 + 子节点 + 孙节点 + 曾孙节点 = 1+10+50+50 = 111
 
             // 验证节点数据
@@ -536,7 +536,7 @@ class DefaultSortingMultipleTreeTest {
             tree.removeNode("child5")
 
             // 验证删除后的节点总数
-            assertEquals(1 + 9 + 9 * 5 + 9 * 5 * 1, tree.getAllNodes().size) // 111 - (1+5+5) = 100
+            assertEquals(1 + 9 + 9 * 5 + 9 * 5 * 1, tree.flattenTree().size) // 111 - (1+5+5) = 100
         }
 
         @Test

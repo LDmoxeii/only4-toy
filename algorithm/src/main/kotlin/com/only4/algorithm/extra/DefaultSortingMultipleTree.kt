@@ -13,7 +13,7 @@ class DefaultSortingMultipleTree<K, V>(
     private val pathSeparator: String = "/",
     // 节点排序基数
     private val sortBase: Long = 100L,
-) : AbstractOrderedMultipleTree<K, V>(), SortingMultipleTree<K, V> {
+) : AbstractSortingMultipleTree<K, V>(), SortingMultipleTree<K, V> {
 
     /**
      * 添加节点（自动分配排序值）
@@ -83,13 +83,6 @@ class DefaultSortingMultipleTree<K, V>(
         moveChildrenForward(parentKey, lastSortIndex)
 
         return true
-    }
-
-    /**
-     * 获取树的所有节点列表
-     */
-    override fun getAllNodes(): List<OrderedTreeNode<K, V>> {
-        return nodeMap.values.toList().sortedBy { it.sort }
     }
 
     /**
