@@ -28,25 +28,15 @@ interface SortingTreeSynchronizer<K, V> {
         val isSyncNeeded: Boolean = false
     )
 
-    /**
-     * 比较两个节点是否键相同
-     * 粒度1：仅比较唯一键
-     *
-     * @param node1 第一个节点
-     * @param node2 第二个节点
-     * @return 如果唯一键相同返回true，否则返回false
-     */
-    fun compareNodesByKey(node1: SortingTreeNode<K, V>, node2: SortingTreeNode<K, V>): Boolean
+    data class SyncMataData<K, V>(
+        val source: SortingMultipleTree<K, V>,
+        val dummyKey: K,
+        val pathSeparator: String,
+        val sortBase: Long,
+    )
 
-    /**
-     * 比较两个节点是否完全相同
-     * 粒度2：比较父节点唯一键、节点排序值和节点数据
-     *
-     * @param node1 第一个节点
-     * @param node2 第二个节点
-     * @return 如果父节点唯一键、节点排序值和节点数据都相同返回true，否则返回false
-     */
-    fun compareNodesFully(node1: SortingTreeNode<K, V>, node2: SortingTreeNode<K, V>): Boolean
+    val syncContext: Pair<SyncMataData<K, V>, SyncMataData<K, V>>
+
 
     /**
      * 统计两棵树之间的差异
@@ -79,12 +69,12 @@ interface SortingTreeSynchronizer<K, V> {
      *
      * @param sourceTree 源树（作为同步的基准）
      * @param targetTree 目标树（将被修改以匹配源树）
-     * @param keys 需要同步的节点列表，如果为空则同步所有节点
+     * @param syncResults 需要同步的节点列表，如果为空则同步所有节点
      * @return 同步后的差异结果列表
      */
     fun synchronizeTreesByResults(
         sourceTree: SortingMultipleTree<K, V>,
         targetTree: SortingMultipleTree<K, V>,
-        keys: Collection<SyncResult<K, V>> = emptyList()
+        syncResults: Collection<SyncResult<K, V>> = emptyList()
     ): List<SyncResult<K, V>>
 }

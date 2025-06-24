@@ -15,6 +15,30 @@ interface SortingMultipleTree<K, V> {
     val sortBase: Long
 
     /**
+     * 添加根节点（自动分配排序值）
+     *
+     * @param key 节点唯一键
+     * @param data 节点数据
+     * @return 添加的根节点
+     */
+    fun addRootNode(key: K, data: V): SortingTreeNode<K, V> = this.addNode(key, dummyKey, data)
+
+    /**
+     * 添加根节点（指定排序值）
+     *
+     * @param key 节点唯一键
+     * @param data 节点数据
+     * @param sort 指定的排序值
+     * @return 添加的根节点
+     */
+    fun addRootNode(key: K, data: V, sort: Long): SortingTreeNode<K, V> = this.addNode(key, dummyKey, data, sort)
+
+    fun isRoot(node: SortingTreeNode<K, V>): Boolean {
+        return node.parentKey == dummyKey
+    }
+
+
+    /**
      * 添加节点（自动分配排序值）
      *
      * @param key 节点唯一键
@@ -54,6 +78,17 @@ interface SortingMultipleTree<K, V> {
     fun moveNode(key: K, newParentKey: K, newSort: Long? = null): SortingTreeNode<K, V>?
 
     /**
+     * 移动节点为根节点
+     *
+     * @param key 要移动的节点键
+     * @param newSort 可选的新排序值，如果为null则自动计算
+     * @return 移动后的节点，如果移动失败则返回null
+     */
+    fun moveNodeToRoot(key: K, newSort: Long? = null): SortingTreeNode<K, V>? {
+        return moveNode(key, dummyKey, newSort)
+    }
+
+    /**
      * 移动节点到新的父节点下
      *
      * @param node 要移动的节点对象
@@ -62,6 +97,15 @@ interface SortingMultipleTree<K, V> {
      * @return 移动后的节点，如果移动失败则返回null
      */
     fun moveNode(node: SortingTreeNode<K, V>, newParentKey: K, newSort: Long? = null): SortingTreeNode<K, V>
+
+    /**
+     * 移动节点为根节点
+     */
+    fun moveNodeToRoot(node: SortingTreeNode<K, V>, newSort: Long? = null): SortingTreeNode<K, V> {
+        return moveNode(node, dummyKey, newSort)
+    }
+
+
 
     /**
      * 批量移动节点到新的父节点下
