@@ -30,7 +30,7 @@ interface SortingMultipleTree<K, V> {
      * @param key 节点唯一键
      * @param parentKey 父节点键
      * @param data 节点数据
-     * @param sort 指定的排序值, 同级节点排序号, 需要配合父节点  规则为：父节点排序 * 100 + 同级节点排序号递增
+     * @param sort 指定的排序值
      * @return 添加的节点
      */
     fun addNode(key: K, parentKey: K, data: V, sort: Long): SortingTreeNode<K, V>
@@ -135,7 +135,7 @@ abstract class AbstractSortingMultipleTree<K, V> : SortingMultipleTree<K, V> {
     protected val pathNodeMap: MutableMap<String, SortingTreeNode<K, V>> = mutableMapOf()
 
     // 存储父节点到子节点的映射
-    protected val parentChildMap: MutableMap<K?, MutableList<SortingTreeNode<K, V>>> = mutableMapOf()
+    protected val parentChildMap: MutableMap<K, MutableList<SortingTreeNode<K, V>>> = mutableMapOf()
 
     /**
      * 生成节点路径
