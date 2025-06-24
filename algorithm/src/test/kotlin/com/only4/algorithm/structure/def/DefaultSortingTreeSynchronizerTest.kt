@@ -25,23 +25,8 @@ class DefaultSortingTreeSynchronizerTest {
         sourceTree = DefaultSortingMultipleTree("ROOT", "/", 100L)
         targetTree = DefaultSortingMultipleTree("ROOT", "/", 100L)
 
-        // 创建同步器
-        val sourceMeta = SortingTreeSynchronizer.SyncMataData(
-            sourceTree,
-            sourceTree.dummyKey,
-            sourceTree.pathSeparator,
-            sourceTree.sortBase
-        )
-        val targetMeta = SortingTreeSynchronizer.SyncMataData(
-            targetTree,
-            targetTree.dummyKey,
-            targetTree.pathSeparator,
-            targetTree.sortBase
-        )
-        synchronizer = DefaultSortingTreeSynchronizer(
-            { v1, v2 -> v1 == v2 },
-            Pair(sourceMeta, targetMeta)
-        )
+        // 创建同步器，简化后不再需要SyncMataData
+        synchronizer = DefaultSortingTreeSynchronizer { v1, v2 -> v1 == v2 }
     }
 
     @Nested
@@ -327,27 +312,12 @@ class DefaultSortingTreeSynchronizerTest {
             val sourceTreeDifferentBase = DefaultSortingMultipleTree<String, String>("ROOT", "/", 1000L)
             val targetTreeDifferentBase = DefaultSortingMultipleTree<String, String>("ROOT", "/", 100L)
 
-            // 创建同步器
-            val sourceMeta = SortingTreeSynchronizer.SyncMataData(
-                sourceTreeDifferentBase,
-                sourceTreeDifferentBase.dummyKey,
-                sourceTreeDifferentBase.pathSeparator,
-                sourceTreeDifferentBase.sortBase
-            )
-            val targetMeta = SortingTreeSynchronizer.SyncMataData(
-                targetTreeDifferentBase,
-                targetTreeDifferentBase.dummyKey,
-                targetTreeDifferentBase.pathSeparator,
-                targetTreeDifferentBase.sortBase
-            )
-            val syncDifferentBase = DefaultSortingTreeSynchronizer(
-                { v1, v2 -> v1 == v2 },
-                Pair(sourceMeta, targetMeta)
-            )
+            // 创建同步器，简化后不再需要SyncMataData
+            val syncDifferentBase = DefaultSortingTreeSynchronizer<String, String> { v1, v2 -> v1 == v2 }
 
             // 在源树中添加节点
-            val root1 = sourceTreeDifferentBase.addRootNode("root1", "根节点1", 5L) // 排序值为1
-            val child1 = sourceTreeDifferentBase.addNode("child1", "root1", "子节点1", 3L) // 排序值为1 * 1000 + 1 = 1001
+            val root1 = sourceTreeDifferentBase.addRootNode("root1", "根节点1", 1L) // 排序值为1
+            val child1 = sourceTreeDifferentBase.addNode("child1", "root1", "子节点1", 1L) // 排序值为1 * 1000 + 1 = 1001
 
             // 同步到目标树
             val results =
@@ -356,7 +326,7 @@ class DefaultSortingTreeSynchronizerTest {
             // 验证目标树中节点的排序值
             val targetRoot = targetTreeDifferentBase.findNodeByKey("root1")
             assertNotNull(targetRoot)
-            assertEquals(1L, targetRoot!!.sort) // 在目标树中，排序索引应该是1
+            assertEquals(1L, targetRoot!!.sort) // 在目标树中，排序值应该是1
 
             val targetChild = targetTreeDifferentBase.findNodeByKey("child1")
             assertNotNull(targetChild)

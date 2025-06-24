@@ -12,8 +12,7 @@ import com.only4.algorithm.structure.SortingTreeSynchronizer
  * @param dataComparator 用于比较节点数据的比较器，默认使用equals方法
  */
 class DefaultSortingTreeSynchronizer<K, V>(
-    private val dataComparator: (V, V) -> Boolean = { v1, v2 -> v1 == v2 },
-    override val syncContext: Pair<SortingTreeSynchronizer.SyncMataData<K, V>, SortingTreeSynchronizer.SyncMataData<K, V>>
+    private val dataComparator: (V, V) -> Boolean = { v1, v2 -> v1 == v2 }
 ) : SortingTreeSynchronizer<K, V> {
 
     /**
@@ -41,7 +40,7 @@ class DefaultSortingTreeSynchronizer<K, V>(
                 result.add(SortingTreeSynchronizer.SyncResult(sourceNode, SortingTreeSynchronizer.SyncType.ADD))
             } else {
                 // 检查节点是否完全相同
-                if (compareNodesFully(sourceNode, targetNode)) {
+                if (compareNodesFully(sourceNode, targetNode, sourceTree, targetTree)) {
                     // 情况1：两个节点完全相同
                     result.add(SortingTreeSynchronizer.SyncResult(sourceNode, SortingTreeSynchronizer.SyncType.SAME))
                 } else {
@@ -75,22 +74,29 @@ class DefaultSortingTreeSynchronizer<K, V>(
 
     private fun compareNodesBySort(
         node1: SortingTreeNode<K, V>,
-        node2: SortingTreeNode<K, V>
+        node2: SortingTreeNode<K, V>,
+        sourceTree: SortingMultipleTree<K, V>,
+        targetTree: SortingMultipleTree<K, V>
     ): Boolean {
-        val node1SortBase = syncContext.first.sortBase
-        val node2SortBase = syncContext.second.sortBase
-        return (node1.sort / node1SortBase) == (node2.sort / node2SortBase) &&
-                (node1.sort % node1SortBase) == (node2.sort % node2SortBase)
+        val sourceSortBase = sourceTree.sortBase
+        val targetSortBase = targetTree.sortBase
+        return (node1.sort / sourceSortBase) == (node2.sort / targetSortBase) &&
+                (node1.sort % sourceSortBase) == (node2.sort % targetSortBase)
     }
 
     /**
      * 比较两个节点是否完全相同
      * 粒度2：比较父节点唯一键、节点排序值和节点数据
      */
-    private fun compareNodesFully(node1: SortingTreeNode<K, V>, node2: SortingTreeNode<K, V>): Boolean {
+    private fun compareNodesFully(
+        node1: SortingTreeNode<K, V>,
+        node2: SortingTreeNode<K, V>,
+        sourceTree: SortingMultipleTree<K, V>,
+        targetTree: SortingMultipleTree<K, V>
+    ): Boolean {
         return this.compareNodesByKey(node1, node2) &&
                 node1.parentKey == node2.parentKey &&
-                compareNodesBySort(node1, node2) &&
+                compareNodesBySort(node1, node2, sourceTree, targetTree) &&
                 dataComparator(node1.data, node2.data)
     }
 
@@ -156,7 +162,8 @@ class DefaultSortingTreeSynchronizer<K, V>(
         // 先处理添加操作
         processSyncTypeInOrder(
             differences,
-            sourceTree, targetTree,
+            sourceTree,
+            targetTree,
             listOf(SortingTreeSynchronizer.SyncType.ADD),
             nodeMapByKey,
             processedResults
@@ -190,7 +197,8 @@ class DefaultSortingTreeSynchronizer<K, V>(
      */
     private fun processSyncTypeInOrder(
         differences: Collection<SortingTreeSynchronizer.SyncResult<K, V>>,
-        sourceTree: SortingMultipleTree<K, V>, targetTree: SortingMultipleTree<K, V>,
+        sourceTree: SortingMultipleTree<K, V>,
+        targetTree: SortingMultipleTree<K, V>,
         syncTypes: List<SortingTreeSynchronizer.SyncType>,
         nodeMapByKey: MutableMap<K, SortingTreeNode<K, V>>,
         processedResults: MutableList<SortingTreeSynchronizer.SyncResult<K, V>>
@@ -257,16 +265,18 @@ class DefaultSortingTreeSynchronizer<K, V>(
         // 添加节点到目标树
         val addedNode = if (sourceTree.isRoot(node)) {
             targetTree.addRootNode(
-                node.key, node.data,
-                getSortIndex(node.sort, syncContext.second.sortBase)
+                node.key,
+                node.data,
+                getSortIndex(node.sort, sourceTree.sortBase)
             )
         } else {
             targetTree.addNode(
-                node.key, node.parentKey, node.data,
-                getSortIndex(node.sort, syncContext.second.sortBase)
+                node.key,
+                node.parentKey,
+                node.data,
+                getSortIndex(node.sort, sourceTree.sortBase)
             )
         }
-
 
         // 将添加的节点放入映射中，以便后续操作使用
         nodeMapByKey[node.key] = addedNode
@@ -311,25 +321,25 @@ class DefaultSortingTreeSynchronizer<K, V>(
             val movedNode = if (sourceTree.isRoot(node)) {
                 targetTree.moveNodeToRoot(
                     targetNode,
-                    getSortIndex(node.sort, syncContext.second.sortBase)
+                    getSortIndex(node.sort, sourceTree.sortBase)
                 )
             } else {
-                targetTree.moveNode(targetNode, node.parentKey, getSortIndex(node.sort, syncContext.second.sortBase))
+                targetTree.moveNode(
+                    targetNode,
+                    node.parentKey,
+                    getSortIndex(node.sort, sourceTree.sortBase)
+                )
             }
 
             // 更新映射
             nodeMapByKey[node.key] = movedNode
             return SortingTreeSynchronizer.SyncResult(movedNode, SortingTreeSynchronizer.SyncType.UPDATE, true)
-        } else if (getSortIndex(targetNode.sort, syncContext.second.sortBase) != getSortIndex(
-                node.sort,
-                syncContext.first.sortBase
-            )
-        ) {
+        } else if (getSortIndex(targetNode.sort, targetTree.sortBase) != getSortIndex(node.sort, sourceTree.sortBase)) {
             // 如果只有排序值需要更改，移动节点但保持相同的父节点
             val movedNode = targetTree.moveNode(
                 targetNode.key,
                 targetNode.parentKey,
-                getSortIndex(node.sort, syncContext.second.sortBase)
+                getSortIndex(node.sort, sourceTree.sortBase)
             )
 
             // 更新映射

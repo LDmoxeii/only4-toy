@@ -28,16 +28,6 @@ interface SortingTreeSynchronizer<K, V> {
         val isSyncNeeded: Boolean = false
     )
 
-    data class SyncMataData<K, V>(
-        val source: SortingMultipleTree<K, V>,
-        val dummyKey: K,
-        val pathSeparator: String,
-        val sortBase: Long,
-    )
-
-    val syncContext: Pair<SyncMataData<K, V>, SyncMataData<K, V>>
-
-
     /**
      * 统计两棵树之间的差异
      *
