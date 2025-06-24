@@ -108,7 +108,7 @@ class DefaultSortingMultipleTree<K, V>(
      */
     override fun generateNodePath(key: K, parentKey: K): String {
         if (parentKey == dummyKey) {
-            return "$key"
+            return "$dummyKey$pathSeparator$key"
         }
 
         val parentNode = findNodeByKey(parentKey)

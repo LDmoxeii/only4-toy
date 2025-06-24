@@ -12,7 +12,7 @@ class DefaultSortingMultipleTreeTest {
 
     @BeforeEach
     fun setup() {
-        tree = DefaultSortingMultipleTree("dummy")
+        tree = DefaultSortingMultipleTree("ROOT")
     }
 
     @Nested
@@ -21,12 +21,12 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `添加根节点`() {
-            val node = tree.addNode("root1", "dummy", "根节点1")
+            val node = tree.addNode("root1", "ROOT", "根节点1")
 
             Assertions.assertEquals("root1", node.key)
-            Assertions.assertEquals("dummy", node.parentKey)
+            Assertions.assertEquals("ROOT", node.parentKey)
             Assertions.assertEquals("根节点1", node.data)
-            Assertions.assertEquals("root1", node.nodePath)
+            Assertions.assertEquals("ROOT/root1", node.nodePath)
             Assertions.assertEquals(1L, node.sort) // 第一个根节点应该是1
             Assertions.assertTrue(node.children.isEmpty())
 
@@ -38,9 +38,9 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `添加多个根节点`() {
-            val root1 = tree.addNode("root1", "dummy", "根节点1")
-            val root2 = tree.addNode("root2", "dummy", "根节点2")
-            val root3 = tree.addNode("root3", "dummy", "根节点3")
+            val root1 = tree.addNode("root1", "ROOT", "根节点1")
+            val root2 = tree.addNode("root2", "ROOT", "根节点2")
+            val root3 = tree.addNode("root3", "ROOT", "根节点3")
 
             // 验证排序值递增
             Assertions.assertEquals(1L, root1.sort)
@@ -55,7 +55,7 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `添加子节点`() {
-            val root = tree.addNode("root1", "dummy", "根节点1") // sort: 1
+            val root = tree.addNode("root1", "ROOT", "根节点1") // sort: 1
             val child1 = tree.addNode("child1", "root1", "子节点1") // sort: 1*100+1 = 101
             val child2 = tree.addNode("child2", "root1", "子节点2") // sort: 1*100+2 = 102
 
@@ -68,8 +68,8 @@ class DefaultSortingMultipleTreeTest {
             Assertions.assertEquals(102L, child2.sort)
 
             // 验证节点路径
-            Assertions.assertEquals("root1/child1", child1.nodePath)
-            Assertions.assertEquals("root1/child2", child2.nodePath)
+            Assertions.assertEquals("ROOT/root1/child1", child1.nodePath)
+            Assertions.assertEquals("ROOT/root1/child2", child2.nodePath)
 
             // 验证父节点的子节点列表
             Assertions.assertEquals(2, root.children.size)
@@ -84,14 +84,14 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `添加多层级子节点`() {
-            val root = tree.addNode("root1", "dummy", "根节点1") // sort: 1
+            val root = tree.addNode("root1", "ROOT", "根节点1") // sort: 1
             val child1 = tree.addNode("child1", "root1", "子节点1") // sort: 1*100+1 = 101
             val grandChild1 = tree.addNode("grandChild1", "child1", "孙节点1") // sort: 101*100+1 = 10101
 
             // 验证节点路径
-            Assertions.assertEquals("root1", root.nodePath)
-            Assertions.assertEquals("root1/child1", child1.nodePath)
-            Assertions.assertEquals("root1/child1/grandChild1", grandChild1.nodePath)
+            Assertions.assertEquals("ROOT/root1", root.nodePath)
+            Assertions.assertEquals("ROOT/root1/child1", child1.nodePath)
+            Assertions.assertEquals("ROOT/root1/child1/grandChild1", grandChild1.nodePath)
 
             // 验证排序值
             Assertions.assertEquals(1L, root.sort)
@@ -105,7 +105,7 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `添加节点时指定排序值`() {
-            val root = tree.addNode("root1", "dummy", "根节点1")
+            val root = tree.addNode("root1", "ROOT", "根节点1")
             val child1 = tree.addNode("child1", "root1", "子节点1") // 默认排序值
             val child2 = tree.addNode("child2", "root1", "子节点2", 2L) // 使用指定的排序值2
             val child3 = tree.addNode("child3", "root1", "子节点3", 5L) // 使用指定的排序值5
@@ -123,7 +123,7 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `添加节点处理排序冲突`() {
-            val root = tree.addNode("root1", "dummy", "根节点1")
+            val root = tree.addNode("root1", "ROOT", "根节点1")
             val child1 = tree.addNode("child1", "root1", "子节点1", 1L) // sort: 1*100+1 = 101
 
             // 添加另一个具有相同排序值的子节点
@@ -141,10 +141,10 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `添加已存在键的节点应该抛出异常`() {
-            tree.addNode("key1", "dummy", "数据1")
+            tree.addNode("key1", "ROOT", "数据1")
 
             val exception = Assertions.assertThrows(IllegalArgumentException::class.java) {
-                tree.addNode("key1", "dummy", "数据2")
+                tree.addNode("key1", "ROOT", "数据2")
             }
 
             Assertions.assertTrue(exception.message!!.contains("already exists"))
@@ -157,7 +157,7 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `删除叶子节点`() {
-            val root = tree.addNode("root1", "dummy", "根节点1")
+            val root = tree.addNode("root1", "ROOT", "根节点1")
             val child1 = tree.addNode("child1", "root1", "子节点1")
             val child2 = tree.addNode("child2", "root1", "子节点2")
 
@@ -182,7 +182,7 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `删除带有子节点的节点应递归删除`() {
-            val root = tree.addNode("root1", "dummy", "根节点1")
+            val root = tree.addNode("root1", "ROOT", "根节点1")
             val child1 = tree.addNode("child1", "root1", "子节点1")
             val grandChild1 = tree.addNode("grandChild1", "child1", "孙节点1")
             val grandChild2 = tree.addNode("grandChild2", "child1", "孙节点2")
@@ -209,8 +209,8 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `删除根节点应递归删除整棵子树`() {
-            val root1 = tree.addNode("root1", "dummy", "根节点1")
-            val root2 = tree.addNode("root2", "dummy", "根节点2")
+            val root1 = tree.addNode("root1", "ROOT", "根节点1")
+            val root2 = tree.addNode("root2", "ROOT", "根节点2")
             tree.addNode("child1", "root1", "子节点1")
 
             // 删除根节点
@@ -239,13 +239,13 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `删除节点后添加相同键的新节点`() {
-            tree.addNode("key1", "dummy", "原始数据")
+            tree.addNode("key1", "ROOT", "原始数据")
 
             // 删除节点
             Assertions.assertTrue(tree.removeNode("key1"))
 
             // 添加同键新节点
-            val newNode = tree.addNode("key1", "dummy", "新数据")
+            val newNode = tree.addNode("key1", "ROOT", "新数据")
 
             // 验证新节点添加成功
             Assertions.assertNotNull(tree.findNodeByKey("key1"))
@@ -260,7 +260,7 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `通过键查询节点`() {
-            val root = tree.addNode("root1", "dummy", "根节点1")
+            val root = tree.addNode("root1", "ROOT", "根节点1")
             val child = tree.addNode("child1", "root1", "子节点1")
 
             val foundRoot = tree.findNodeByKey("root1")
@@ -278,14 +278,14 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `通过父键查询节点列表`() {
-            val root = tree.addNode("root1", "dummy", "根节点1")
+            val root = tree.addNode("root1", "ROOT", "根节点1")
             val child1 = tree.addNode("child1", "root1", "子节点1")
             val child2 = tree.addNode("child2", "root1", "子节点2")
             val child3 = tree.addNode("child3", "root1", "子节点3")
 
             val rootChildren = tree.getChildren("root1")
             val nonExistingChildren = tree.getChildren("nonExisting")
-            val rootNodes = tree.getChildren("dummy")
+            val rootNodes = tree.getChildren("ROOT")
 
             // 验证子节点列表
             Assertions.assertEquals(3, rootChildren.size)
@@ -306,23 +306,23 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `通过路径查询子孙节点`() {
-            val root = tree.addNode("root1", "dummy", "根节点1")
+            val root = tree.addNode("root1", "ROOT", "根节点1")
             val child1 = tree.addNode("child1", "root1", "子节点1")
             val child2 = tree.addNode("child2", "root1", "子节点2")
             val grandChild1 = tree.addNode("grandChild1", "child1", "孙节点1")
             val grandChild2 = tree.addNode("grandChild2", "child1", "孙节点2")
 
             // 测试根路径
-            val allNodes = tree.getDescendants("root")
+            val allNodes = tree.getDescendants("ROOT/root")
             Assertions.assertEquals(5, allNodes.size)
 
             // 测试特定节点路径
-            val child1Descendants = tree.getDescendants("root1/child1")
+            val child1Descendants = tree.getDescendants("ROOT/root1/child1")
             Assertions.assertEquals(3, child1Descendants.size) // child1, grandChild1, grandChild2
             Assertions.assertTrue(child1Descendants.containsAll(listOf(child1, grandChild1, grandChild2)))
 
             // 测试叶子节点路径
-            val leafNodes = tree.getDescendants("root1/child1/grandChild1")
+            val leafNodes = tree.getDescendants("ROOT/root1/child1/grandChild1")
             Assertions.assertEquals(1, leafNodes.size)
             Assertions.assertEquals(grandChild1, leafNodes[0])
 
@@ -338,8 +338,8 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `获取所有节点`() {
-            val root1 = tree.addNode("root1", "dummy", "根节点1")
-            val root2 = tree.addNode("root2", "dummy", "根节点2")
+            val root1 = tree.addNode("root1", "ROOT", "根节点1")
+            val root2 = tree.addNode("root2", "ROOT", "根节点2")
             val child1 = tree.addNode("child1", "root1", "子节点1")
             val grandChild1 = tree.addNode("grandChild1", "child1", "孙节点1")
 
@@ -358,8 +358,8 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `获取根节点列表`() {
-            val root1 = tree.addNode("root1", "dummy", "根节点1")
-            val root2 = tree.addNode("root2", "dummy", "根节点2")
+            val root1 = tree.addNode("root1", "ROOT", "根节点1")
+            val root2 = tree.addNode("root2", "ROOT", "根节点2")
             tree.addNode("child1", "root1", "子节点1")
 
             val rootNodes = tree.getRootNodes()
@@ -375,8 +375,8 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `将树转换为扁平列表`() {
-            val root1 = tree.addNode("root1", "dummy", "根节点1")
-            val root2 = tree.addNode("root2", "dummy", "根节点2")
+            val root1 = tree.addNode("root1", "ROOT", "根节点1")
+            val root2 = tree.addNode("root2", "ROOT", "根节点2")
             val child1 = tree.addNode("child1", "root1", "子节点1")
             val grandChild1 = tree.addNode("grandChild1", "child1", "孙节点1")
 
@@ -401,7 +401,7 @@ class DefaultSortingMultipleTreeTest {
         @Test
         fun `构建复杂树结构`() {
             // 创建一个包含多层级、多分支的复杂树结构
-            val root = tree.addNode("root", "dummy", "根节点")
+            val root = tree.addNode("root", "ROOT", "根节点")
 
             // 第一层子节点
             val child1 = tree.addNode("child1", "root", "子节点1")
@@ -439,26 +439,26 @@ class DefaultSortingMultipleTreeTest {
             Assertions.assertEquals(1010101L, greatGrandChild111.sort)
 
             // 验证节点路径
-            Assertions.assertEquals("root", root.nodePath)
-            Assertions.assertEquals("root/child1", child1.nodePath)
-            Assertions.assertEquals("root/child1/gc11", grandChild11.nodePath)
-            Assertions.assertEquals("root/child1/gc11/ggc111", greatGrandChild111.nodePath)
+            Assertions.assertEquals("ROOT/root", root.nodePath)
+            Assertions.assertEquals("ROOT/root/child1", child1.nodePath)
+            Assertions.assertEquals("ROOT/root/child1/gc11", grandChild11.nodePath)
+            Assertions.assertEquals("ROOT/root/child1/gc11/ggc111", greatGrandChild111.nodePath)
 
             // 验证通过路径查询
-            val nodesAtRoot = tree.getDescendants("root")
+            val nodesAtRoot = tree.getDescendants("ROOT/root")
             Assertions.assertEquals(8, nodesAtRoot.size) // 所有节点
 
-            val nodesAtChild1 = tree.getDescendants("root/child1")
+            val nodesAtChild1 = tree.getDescendants("ROOT/root/child1")
             Assertions.assertEquals(4, nodesAtChild1.size) // child1, gc11, gc12, ggc111
 
-            val nodesAtGC11 = tree.getDescendants("root/child1/gc11")
+            val nodesAtGC11 = tree.getDescendants("ROOT/root/child1/gc11")
             Assertions.assertEquals(2, nodesAtGC11.size) // gc11, ggc111
         }
 
         @Test
         fun `删除中间节点并重新构建`() {
             // 构建初始树
-            val root = tree.addNode("root", "dummy", "根节点")
+            val root = tree.addNode("root", "ROOT", "根节点")
             val child1 = tree.addNode("child1", "root", "子节点1")
             val child2 = tree.addNode("child2", "root", "子节点2")
             val grandChild11 = tree.addNode("gc11", "child1", "孙节点1-1")
@@ -486,13 +486,13 @@ class DefaultSortingMultipleTreeTest {
 
             // 验证新子树构建正确
             Assertions.assertEquals(10201L, newGrandChild.sort)
-            Assertions.assertEquals("root/child1/newGC", newGrandChild.nodePath)
+            Assertions.assertEquals("ROOT/root/child1/newGC", newGrandChild.nodePath)
         }
 
         @Test
         fun `处理大量节点和深层嵌套`() {
             // 构建一个有100个节点的树
-            val root = tree.addNode("root", "dummy", "根节点")
+            val root = tree.addNode("root", "ROOT", "根节点")
 
             // 添加10个子节点
             for (i in 1..10) {
@@ -529,7 +529,7 @@ class DefaultSortingMultipleTreeTest {
 
             val lastGC = tree.findNodeByKey("child10_gc5")
             Assertions.assertEquals(11005L, lastGC?.sort)
-            Assertions.assertEquals("root/child10/child10_gc5", lastGC?.nodePath)
+            Assertions.assertEquals("ROOT/root/child10/child10_gc5", lastGC?.nodePath)
 
             // 删除一个中间层节点，验证大量节点的删除
             tree.removeNode("child5")
@@ -540,7 +540,7 @@ class DefaultSortingMultipleTreeTest {
 
         @Test
         fun `验证节点排序冲突和解决`() {
-            val root = tree.addNode("root", "dummy", "根节点")
+            val root = tree.addNode("root", "ROOT", "根节点")
 
             // 添加5个排序值连续的子节点
             val child1 = tree.addNode("child1", "root", "子节点1") // sort: 101
@@ -597,12 +597,12 @@ class DefaultSortingMultipleTreeTest {
         fun `使用复杂对象作为数据类型`() {
             data class Person(val name: String, val age: Int)
 
-            val personTree = DefaultSortingMultipleTree<String, Person>("dummy")
+            val personTree = DefaultSortingMultipleTree<String, Person>("ROOT")
 
             val rootPerson = Person("张三", 50)
             val childPerson = Person("李四", 25)
 
-            val root = personTree.addNode("person1", "dummy", rootPerson)
+            val root = personTree.addNode("person1", "ROOT", rootPerson)
             val child = personTree.addNode("person2", "person1", childPerson)
 
             Assertions.assertEquals(rootPerson, root.data)
@@ -621,11 +621,11 @@ class DefaultSortingMultipleTreeTest {
         @Test
         fun `移动节点到新的父节点下 - 基本移动`() {
             // 创建树
-            val tree = DefaultSortingMultipleTree<String, String>("dummy")
+            val tree = DefaultSortingMultipleTree<String, String>("ROOT")
 
             // 添加节点
-            val root1 = tree.addNode("root1", "dummy", "根节点1")
-            val root2 = tree.addNode("root2", "dummy", "根节点2")
+            val root1 = tree.addNode("root1", "ROOT", "根节点1")
+            val root2 = tree.addNode("root2", "ROOT", "根节点2")
             val child1 = tree.addNode("child1", "root1", "子节点1")
             val child2 = tree.addNode("child2", "root1", "子节点2")
             val grandchild = tree.addNode("grandchild", "child1", "孙节点")
@@ -639,11 +639,11 @@ class DefaultSortingMultipleTreeTest {
             Assertions.assertEquals("root2", movedNode?.parentKey)
 
             // 验证节点路径已更新
-            Assertions.assertEquals("root2/child1", movedNode?.nodePath)
+            Assertions.assertEquals("ROOT/root2/child1", movedNode?.nodePath)
 
             // 验证子节点的路径也已更新
             val grandchildAfterMove = tree.findNodeByKey("grandchild")
-            Assertions.assertEquals("root2/child1/grandchild", grandchildAfterMove?.nodePath)
+            Assertions.assertEquals("ROOT/root2/child1/grandchild", grandchildAfterMove?.nodePath)
 
             // 验证原父节点的子节点列表已更新
             val root1Children = tree.getChildren("root1")
@@ -659,16 +659,16 @@ class DefaultSortingMultipleTreeTest {
         @Test
         fun `移动节点到新的父节点下 - 指定排序值`() {
             // 创建树
-            val tree = DefaultSortingMultipleTree<String, String>("dummy")
+            val tree = DefaultSortingMultipleTree<String, String>("ROOT")
 
             // 添加节点
-            val root = tree.addNode("root", "dummy", "根节点")
+            val root = tree.addNode("root", "ROOT", "根节点")
             val child1 = tree.addNode("child1", "root", "子节点1") // sort = 101
             val child2 = tree.addNode("child2", "root", "子节点2") // sort = 102
             val child3 = tree.addNode("child3", "root", "子节点3") // sort = 103
 
             // 添加另一个根节点，并在其下添加子节点
-            val root2 = tree.addNode("root2", "dummy", "根节点2") // sort = 2
+            val root2 = tree.addNode("root2", "ROOT", "根节点2") // sort = 2
             val child4 = tree.addNode("child4", "root2", "子节点4") // sort = 201
 
             // 移动节点：将 child4 从 root2 下移动到 root 下，并指定排序值为 2
@@ -701,7 +701,7 @@ class DefaultSortingMultipleTreeTest {
         @Test
         fun `移动节点 - 检测循环依赖`() {
             // 添加节点
-            val root = tree.addNode("root", "dummy", "根节点")
+            val root = tree.addNode("root", "ROOT", "根节点")
             val child = tree.addNode("child", "root", "子节点")
             val grandchild = tree.addNode("grandchild", "child", "孙节点")
 
@@ -717,7 +717,7 @@ class DefaultSortingMultipleTreeTest {
         @Test
         fun `移动节点 - 更新所有子孙节点的路径`() {
             // 添加节点，构建一个较深的树
-            val root = tree.addNode("root", "dummy", "根节点")
+            val root = tree.addNode("root", "ROOT", "根节点")
             val branch1 = tree.addNode("branch1", "root", "分支1")
             val branch2 = tree.addNode("branch2", "root", "分支2")
 
@@ -732,23 +732,23 @@ class DefaultSortingMultipleTreeTest {
 
             // 验证所有子孙节点的路径已更新
             val branch1AfterMove = tree.findNodeByKey("branch1")
-            Assertions.assertEquals("root/branch2/branch1", branch1AfterMove?.nodePath)
+            Assertions.assertEquals("ROOT/root/branch2/branch1", branch1AfterMove?.nodePath)
 
             val leaf1AfterMove = tree.findNodeByKey("leaf1")
-            Assertions.assertEquals("root/branch2/branch1/leaf1", leaf1AfterMove?.nodePath)
+            Assertions.assertEquals("ROOT/root/branch2/branch1/leaf1", leaf1AfterMove?.nodePath)
 
             val leaf2AfterMove = tree.findNodeByKey("leaf2")
-            Assertions.assertEquals("root/branch2/branch1/leaf2", leaf2AfterMove?.nodePath)
+            Assertions.assertEquals("ROOT/root/branch2/branch1/leaf2", leaf2AfterMove?.nodePath)
 
             val deepLeafAfterMove = tree.findNodeByKey("deepLeaf")
-            Assertions.assertEquals("root/branch2/branch1/leaf1/deepLeaf", deepLeafAfterMove?.nodePath)
+            Assertions.assertEquals("ROOT/root/branch2/branch1/leaf1/deepLeaf", deepLeafAfterMove?.nodePath)
         }
 
         @Test
         fun `批量移动节点`() {
             // 添加节点
-            val root1 = tree.addNode("root1", "dummy", "根节点1")
-            val root2 = tree.addNode("root2", "dummy", "根节点2")
+            val root1 = tree.addNode("root1", "ROOT", "根节点1")
+            val root2 = tree.addNode("root2", "ROOT", "根节点2")
 
             val child1 = tree.addNode("child1", "root1", "子节点1")
             val child2 = tree.addNode("child2", "root1", "子节点2")
@@ -774,18 +774,18 @@ class DefaultSortingMultipleTreeTest {
         @Test
         fun `通过路径移动节点`() {
             // 添加节点
-            val root1 = tree.addNode("root1", "dummy", "根节点1")
-            val root2 = tree.addNode("root2", "dummy", "根节点2")
+            val root1 = tree.addNode("root1", "ROOT", "根节点1")
+            val root2 = tree.addNode("root2", "ROOT", "根节点2")
             val child1 = tree.addNode("child1", "root1", "子节点1")
 
             // 通过路径移动节点
-            val movedNode = tree.moveNodeByPath("root1/child1", "root2")
+            val movedNode = tree.moveNodeByPath("ROOT/root1/child1", "ROOT/root2")
 
             // 验证移动后的节点
             Assertions.assertNotNull(movedNode)
             Assertions.assertEquals("child1", movedNode?.key)
             Assertions.assertEquals("root2", movedNode?.parentKey)
-            Assertions.assertEquals("root2/child1", movedNode?.nodePath)
+            Assertions.assertEquals("ROOT/root2/child1", movedNode?.nodePath)
 
             // 验证原父节点和新父节点的子节点列表
             val root1Children = tree.getChildren("root1")
@@ -799,7 +799,7 @@ class DefaultSortingMultipleTreeTest {
         @Test
         fun `移动节点后重新排序原父节点下的子节点`() {
             // 添加节点
-            val root = tree.addNode("root", "dummy", "根节点")
+            val root = tree.addNode("root", "ROOT", "根节点")
             val child1 = tree.addNode("child1", "root", "子节点1") // sort = 101
             val child2 = tree.addNode("child2", "root", "子节点2") // sort = 102
             val child3 = tree.addNode("child3", "root", "子节点3") // sort = 103
@@ -807,7 +807,7 @@ class DefaultSortingMultipleTreeTest {
             val child5 = tree.addNode("child5", "root", "子节点5") // sort = 105
 
             // 移动中间的节点 child3
-            tree.moveNode("child3", "dummy")
+            tree.moveNode("child3", "ROOT")
 
             // 验证原父节点下的子节点排序已调整
             val rootChildren = tree.getChildren("root")
@@ -828,7 +828,7 @@ class DefaultSortingMultipleTreeTest {
         @Test
         fun `移动节点到相同父节点但改变排序`() {
             // 添加节点
-            val root = tree.addNode("root", "dummy", "根节点")
+            val root = tree.addNode("root", "ROOT", "根节点")
             val child1 = tree.addNode("child1", "root", "子节点1") // sort = 101
             val child2 = tree.addNode("child2", "root", "子节点2") // sort = 102
             val child3 = tree.addNode("child3", "root", "子节点3") // sort = 103
