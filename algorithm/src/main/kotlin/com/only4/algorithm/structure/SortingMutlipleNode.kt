@@ -20,7 +20,7 @@ interface SortingTreeNode<K, V> {
     var nodePath: String
 
     /** 节点数据 */
-    val data: V
+    var data: V
 
     /** 子节点列表 */
     val children: MutableList<SortingTreeNode<K, V>>
@@ -38,6 +38,6 @@ data class DefaultSortingTreeNode<K, V>(
     override var parentKey: K,
     override var sort: Long,
     override var nodePath: String,
-    override val data: V,
+    override var data: V,
     override val children: MutableList<SortingTreeNode<K, V>> = mutableListOf()
 ) : SortingTreeNode<K, V>

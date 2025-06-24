@@ -116,6 +116,11 @@ class DefaultSortingTreeSynchronizer<K, V>(
         // 计算差异
         val differences = calculateDifferences(sourceTree, targetTree)
 
+        // 如果同步节点键在两个树中都不存在，抛出异常
+        if (keys.isNotEmpty() && differences.none { it.node.key in keys }) {
+            throw IllegalArgumentException("No nodes found in the trees for the specified keys: $keys")
+        }
+
         // 如果keys为空，同步所有差异
         if (keys.isEmpty()) {
             return synchronizeTreesByResults(sourceTree, targetTree, differences)
@@ -148,6 +153,14 @@ class DefaultSortingTreeSynchronizer<K, V>(
         targetTree: SortingMultipleTree<K, V>,
         syncResults: Collection<SortingTreeSynchronizer.SyncResult<K, V>>
     ): List<SortingTreeSynchronizer.SyncResult<K, V>> {
+        // 如果同步节点在两棵树中都无法找到，抛出异常
+        if (syncResults.isNotEmpty() && syncResults.none {
+                it.node.key in sourceTree.flattenTree().map { it.key }
+            } && syncResults.none { it.node.key in targetTree.flattenTree().map { it.key } }) {
+            throw IllegalArgumentException("No nodes found in the source tree for the specified sync results.")
+        }
+
+
         // 如果syncResults为空，计算所有差异并同步
         val differences = if (syncResults.isEmpty()) {
             calculateDifferences(sourceTree, targetTree)
@@ -348,6 +361,8 @@ class DefaultSortingTreeSynchronizer<K, V>(
                 return SortingTreeSynchronizer.SyncResult(movedNode, SortingTreeSynchronizer.SyncType.UPDATE, true)
             }
         }
+
+        targetNode.data = node.data
 
         // 如果没有移动成功或者不需要移动，返回更新失败的结果
         return SortingTreeSynchronizer.SyncResult(targetNode, SortingTreeSynchronizer.SyncType.UPDATE, false)
