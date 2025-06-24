@@ -41,6 +41,22 @@ interface SortingTreeSynchronizer<K, V> {
     ): List<SyncResult<K, V>>
 
     /**
+     * 统计两棵树之间的差异
+     *
+     * @param sourceTree 源树
+     * @param targetTree 目标树
+     * @param sourceNodeMap 源树节点映射，键为节点唯一键，值为节点对象
+     * @param targetNodeMap 目标树节点映射，键为节点唯一键，值为节点对象
+     * @return 包含所有差异节点及其同步类型的结果列表
+     */
+    fun calculateDifferences(
+        sourceTree: SortingMultipleTree<K, V>,
+        targetTree: SortingMultipleTree<K, V>,
+        sourceNodeMap: Map<K, SortingTreeNode<K, V>>,
+        targetNodeMap: Map<K, SortingTreeNode<K, V>>
+    ): List<SyncResult<K, V>>
+
+    /**
      * 同步两棵树
      *
      * @param sourceTree 源树（作为同步的基准）

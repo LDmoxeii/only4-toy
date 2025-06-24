@@ -17,7 +17,7 @@ class DefaultSortingMultipleTree<K, V>(
     override val pathSeparator: String = "/",
     // 节点排序基数
     override val sortBase: Long = 100L,
-) : AbstractSortingMultipleTree<K, V>() {
+) : AbstractSortingMultipleTree<K, V>(dummyKey, pathSeparator, sortBase) {
 
     /**
      * 添加节点（自动分配排序值）
@@ -251,101 +251,55 @@ class DefaultSortingMultipleTree<K, V>(
      * 移动节点到新的父节点下
      */
     override fun moveNode(key: K, newParentKey: K, newSort: Long?): SortingTreeNode<K, V>? {
-        // 查找节点
         val node = findNodeByKey(key) ?: return null
         return moveNode(node, newParentKey, newSort)
     }
 
     /**
-     * 移动节点到新的父节点下
+     * 移动节点到新的父节点下，这是核心的移动逻辑实现。
+     * 1. 检查操作合法性（如循环依赖）。
+     * 2. 从旧父节点分离。
+     * 3. 更新节点自身及其所有子孙的排序值和路径。
+     * 4. 附加到新父节点下。
+     * 5. 处理新位置的排序冲突并整理旧位置的兄弟节点排序。
      */
     override fun moveNode(node: SortingTreeNode<K, V>, newParentKey: K, newSort: Long?): SortingTreeNode<K, V> {
-        // 检查参数
-        require(node is DefaultSortingTreeNode) { "Node must be an instance of DefaultOrderedTreeNode" }
+        require(node is DefaultSortingTreeNode) { "Node must be an instance of DefaultSortingTreeNode" }
+        // 如果位置和排序值都未改变，则无需移动
+        if (node.parentKey == newParentKey && newSort == null) return node
 
-        val nodeKey = node.key
+        checkWouldNotCreateCycle(node.key, newParentKey)
+
         val oldParentKey = node.parentKey
+        val oldSort = node.sort
 
-        // 如果新旧父节点相同，且没有指定新的排序值，则无需移动
-        if (oldParentKey == newParentKey && newSort == null) {
-            return node
-        }
+        // 步骤 1: 从旧父节点分离
+        detachFromParent(node)
 
-        // 检查是否会导致循环依赖
-        require(
-            !wouldCreateCycle(
-                nodeKey,
-                newParentKey
-            )
-        ) { "Moving node $nodeKey to parent $newParentKey would create a cycle in the tree" }
+        // 步骤 2: 更新节点自身的核心属性
+        // 获取下一个可用的排序索引
+        val nextAvailableIndex = calculateNextSort(newParentKey)
 
-        val originalParentKey = node.parentKey
-        val originalSort = node.sort
-        // 从原父节点的子节点列表中移除
-        if (originalParentKey != dummyKey) {
-            val parentNode = findNodeByKey(originalParentKey)
-            parentNode?.children?.remove(node)
-        }
-
-        // 从父子映射中移除
-        parentChildMap[originalParentKey]!!.remove(node)
-        if (parentChildMap[originalParentKey]!!.isEmpty()) {
-            parentChildMap.remove(originalParentKey)
-        }
-
-        // 从路径映射中移除
-        pathNodeMap.remove(node.nodePath)
-
-        // 计算新的排序值
-        val actualNewSort = if (newSort != null) {
-            // 如果指定了排序值，使用指定值
-            val nextAvailableIndex = calculateNextSort(newParentKey)
-            // 如果指定的排序值大于下一个可用的索引，使用下一个可用的索引
-            if (newSort > nextAvailableIndex) nextAvailableIndex else newSort
-        } else {
-            // 否则自动计算下一个排序值
-            calculateNextSort(newParentKey)
-        }
-
-        // 获取新父节点的排序值
-        val newParentSort = if (newParentKey != dummyKey) findNodeByKey(newParentKey)?.sort ?: 0L else 0L
-
-        // 计算实际的新排序值
-        val actualSort = newParentSort * sortBase + actualNewSort
-
-        // 更新节点的父键和排序值
+        // 如果指定的排序号大于下一个可用的排序索引，则使用下一个可用的排序索引
+        val actualSortIndex = if (newSort == null || newSort > nextAvailableIndex) nextAvailableIndex else newSort
+        val newParentAbsoluteSort = if (newParentKey == dummyKey) 0L else findNodeByKey(newParentKey)?.sort ?: 0L
+        node.sort = newParentAbsoluteSort * sortBase + actualSortIndex
         node.parentKey = newParentKey
-        node.sort = actualSort
 
-        // 生成新的节点路径
-        val oldParentPath = findNodeByKey(originalParentKey)?.nodePath ?: ""
-        val newParentPath = findNodeByKey(newParentKey)?.nodePath ?: ""
-        val oldNodePath = node.nodePath
-        node.nodePath = generateNodePath(nodeKey, newParentKey)
+        // 更新路径，它依赖于新的parentKey
+        pathNodeMap.remove(node.nodePath)
+        node.nodePath = generateNodePath(node.key, newParentKey)
+        pathNodeMap[node.nodePath] = node
 
-        // 更新所有子孙节点的路径和排序值
-        updateDescendantsPathAndSort(
-            originalSort.toString(), actualSort.toString(),
-            oldNodePath,
-            oldParentPath, newParentPath
-        )
+        // 步骤 3: 递归更新所有子孙节点的路径和排序值
+        updateDescendantsRecursively(node)
 
-        // 处理可能的排序冲突
-        handleSortConflict(newParentKey, actualSort)
+        // 步骤 4: 将节点附加到新父节点，并处理可能产生的排序冲突
+        handleSortConflict(newParentKey, node.sort)
+        attachToParent(node)
 
-        // 将节点添加到新父节点的子节点列表
-        if (newParentKey != dummyKey) {
-            val newParentNode = findNodeByKey(newParentKey)
-            newParentNode?.children?.add(node)
-        }
-
-        // 更新映射
-        parentChildMap.getOrPut(newParentKey) { mutableListOf() }.add(node)
-        nodeMap[nodeKey] = node
-
-        // 重新排序原父节点下的子节点
-        val originalSortIndex = getSortIndex(originalSort)
-        moveChildrenForward(originalParentKey, originalSortIndex)
+        // 步骤 5: 重新排序原父节点下的兄弟节点
+        moveChildrenForward(oldParentKey, getSortIndex(oldSort))
 
         return node
     }
@@ -408,51 +362,66 @@ class DefaultSortingMultipleTree<K, V>(
 
         // 检查目标父节点是否是当前节点的子孙节点
         var currentKey: K? = targetParentKey
-        while (currentKey != null) {
-            val currentNode = findNodeByKey(currentKey) ?: break
-            if (currentNode.key == nodeKey) {
+        while (currentKey != null && currentKey != dummyKey) {
+            if (currentKey == nodeKey) {
                 return true
             }
-            currentKey = currentNode.parentKey
+            currentKey = findNodeByKey(currentKey)?.parentKey
         }
 
         return false
     }
 
     /**
-     * 更新子孙节点的路径和排序值
+     * 确保移动操作不会导致循环依赖。
      */
-    private fun updateDescendantsPathAndSort(
-        oldParentSortStr: String,
-        newParentSortStr: String,
-        odlNodePath: String,
-        oldBasePath: String,
-        newBasePath: String
-    ) {
-        // 批量更新所有子孙节点
-        getDescendants(odlNodePath).forEach { descendant ->
-            if (descendant is DefaultSortingTreeNode) {
+    private fun checkWouldNotCreateCycle(nodeKey: K, targetParentKey: K) {
+        require(!wouldCreateCycle(nodeKey, targetParentKey)) {
+            "Moving node $nodeKey to parent $targetParentKey would create a cycle in the tree"
+        }
+    }
+
+    /**
+     * 将节点从其父节点分离。
+     */
+    private fun detachFromParent(node: SortingTreeNode<K, V>) {
+        if (node.parentKey != dummyKey) {
+            findNodeByKey(node.parentKey)?.children?.remove(node)
+        }
+        parentChildMap[node.parentKey]?.remove(node)
+        if (parentChildMap[node.parentKey]?.isEmpty() == true) {
+            parentChildMap.remove(node.parentKey)
+        }
+    }
+
+    /**
+     * 将节点附加到其父节点。
+     */
+    private fun attachToParent(node: SortingTreeNode<K, V>) {
+        if (node.parentKey != dummyKey) {
+            findNodeByKey(node.parentKey)?.children?.add(node)
+        }
+        parentChildMap.getOrPut(node.parentKey) { mutableListOf() }.add(node)
+    }
+
+    /**
+     * 递归更新所有子孙节点的路径和排序值。
+     * 这是对旧的基于字符串操作的 `updateDescendantsPathAndSort` 的替代。
+     */
+    private fun updateDescendantsRecursively(parentNode: DefaultSortingTreeNode<K, V>) {
+        getChildren(parentNode.key).forEach { child ->
+            if (child is DefaultSortingTreeNode) {
                 // 1. 更新路径
-                val oldPath = descendant.nodePath
-                val newPath = oldPath.replace(oldBasePath, newBasePath)
+                pathNodeMap.remove(child.nodePath)
+                child.nodePath = generateNodePath(child.key, parentNode.key)
+                pathNodeMap[child.nodePath] = child
 
-                // 2. 更新排序值 - 使用字符串替换以保持相对排序关系
-                val oldSortStr = descendant.sort.toString()
-                val newSortStr = if (oldSortStr.startsWith(oldParentSortStr)) {
-                    oldSortStr.replaceFirst(oldParentSortStr, newParentSortStr)
-                } else throw IllegalArgumentException(
-                    "Old sort string $oldSortStr does not start with expected parent sort $oldParentSortStr"
-                )
+                // 2. 更新排序值（基于纯数学运算）
+                val sortIndex = getSortIndex(child.sort)
+                child.sort = parentNode.sort * sortBase + sortIndex
 
-                // 3. 从旧路径映射中移除
-                pathNodeMap.remove(oldPath)
-
-                // 4. 更新节点属性
-                descendant.nodePath = newPath
-                descendant.sort = newSortStr.toLong()
-
-                // 5. 添加到新路径映射
-                pathNodeMap[newPath] = descendant
+                // 3. 递归到下一层
+                updateDescendantsRecursively(child)
             }
         }
     }

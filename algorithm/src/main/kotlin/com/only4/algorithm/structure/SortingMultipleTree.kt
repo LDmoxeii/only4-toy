@@ -33,10 +33,15 @@ interface SortingMultipleTree<K, V> {
      */
     fun addRootNode(key: K, data: V, sort: Long): SortingTreeNode<K, V> = this.addNode(key, dummyKey, data, sort)
 
+    /**
+     * 判断一个节点是否为根节点
+     *
+     * @param node 要检查的节点
+     * @return 如果是根节点返回true，否则返回false
+     */
     fun isRoot(node: SortingTreeNode<K, V>): Boolean {
         return node.parentKey == dummyKey
     }
-
 
     /**
      * 添加节点（自动分配排序值）
@@ -105,8 +110,6 @@ interface SortingMultipleTree<K, V> {
         return moveNode(node, dummyKey, newSort)
     }
 
-
-
     /**
      * 批量移动节点到新的父节点下
      *
@@ -170,7 +173,14 @@ interface SortingMultipleTree<K, V> {
  * @param K 键类型
  * @param V 节点数据类型
  */
-abstract class AbstractSortingMultipleTree<K, V> : SortingMultipleTree<K, V> {
+abstract class AbstractSortingMultipleTree<K, V>(
+    // 根节点的虚拟父键标识
+    override val dummyKey: K,
+    // 路径分隔符
+    override val pathSeparator: String = "/",
+    // 节点排序基数
+    override val sortBase: Long = 100L,
+) : SortingMultipleTree<K, V> {
 
     // 存储所有节点的映射，便于快速查找
     protected val nodeMap: MutableMap<K, SortingTreeNode<K, V>> = mutableMapOf()
