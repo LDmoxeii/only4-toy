@@ -1,4 +1,9 @@
-package com.only4.algorithm.extra
+package com.only4.algorithm.structure.def
+
+import com.only4.algorithm.structure.DefaultSortingTreeNode
+import com.only4.algorithm.structure.SortingMultipleTree
+import com.only4.algorithm.structure.SortingTreeNode
+import com.only4.algorithm.structure.SortingTreeSynchronizer
 
 /**
  * 有序多叉树同步器默认实现
@@ -15,7 +20,7 @@ class DefaultOrderedTreeSynchronizer<K, V>(
      * 比较两个节点是否键相同
      * 粒度1：仅比较唯一键
      */
-    override fun compareNodesByKey(node1: OrderedTreeNode<K, V>, node2: OrderedTreeNode<K, V>): Boolean {
+    override fun compareNodesByKey(node1: SortingTreeNode<K, V>, node2: SortingTreeNode<K, V>): Boolean {
         return node1.key == node2.key
     }
 
@@ -23,7 +28,7 @@ class DefaultOrderedTreeSynchronizer<K, V>(
      * 比较两个节点是否完全相同
      * 粒度2：比较父节点唯一键、节点排序值和节点数据
      */
-    override fun compareNodesFully(node1: OrderedTreeNode<K, V>, node2: OrderedTreeNode<K, V>): Boolean {
+    override fun compareNodesFully(node1: SortingTreeNode<K, V>, node2: SortingTreeNode<K, V>): Boolean {
         return this.compareNodesByKey(node1, node2) &&
                 node1.parentKey == node2.parentKey &&
                 node1.sort == node2.sort &&
@@ -128,7 +133,7 @@ class DefaultOrderedTreeSynchronizer<K, V>(
                 }
 
                 // 更新节点数据（如果树实现支持）
-                if (targetNode is DefaultOrderedTreeNode) {
+                if (targetNode is DefaultSortingTreeNode) {
                     updateNodeData(targetNode, sourceNode.data)
                 }
             }
@@ -160,7 +165,7 @@ class DefaultOrderedTreeSynchronizer<K, V>(
      * 注意：这是一个辅助方法，用于在节点类型为DefaultOrderedTreeNode时更新数据
      */
     @Suppress("UNCHECKED_CAST")
-    private fun updateNodeData(targetNode: DefaultOrderedTreeNode<K, V>, newData: V) {
+    private fun updateNodeData(targetNode: DefaultSortingTreeNode<K, V>, newData: V) {
         // 使用反射或其他方式更新数据
         // 这里使用了一个技巧，将DefaultOrderedTreeNode的data字段视为可变的
         val nodeClass = targetNode.javaClass
@@ -212,7 +217,7 @@ class DefaultOrderedTreeSynchronizer<K, V>(
                 }
 
                 // 更新节点数据
-                if (targetNode is DefaultOrderedTreeNode) {
+                if (targetNode is DefaultSortingTreeNode) {
                     updateNodeData(targetNode, sourceNode.data)
                 }
             }

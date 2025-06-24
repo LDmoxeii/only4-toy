@@ -1,6 +1,7 @@
-package com.only4.algorithm.extra
+package com.only4.algorithm.structure.def
 
-import org.junit.jupiter.api.Assertions.*
+import com.only4.algorithm.structure.SortingTreeSynchronizer
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -68,12 +69,12 @@ class SortingTreeSynchronizerTest {
         val nodeA1Source = sourceTree.findNodeByKey("A1")!!
         val nodeA1Target = targetTree.findNodeByKey("A1")!!
 
-        assertTrue(synchronizer.compareNodesByKey(nodeA1Source, nodeA1Target))
+        Assertions.assertTrue(synchronizer.compareNodesByKey(nodeA1Source, nodeA1Target))
 
         val nodeA = sourceTree.findNodeByKey("A")!!
         val nodeB = sourceTree.findNodeByKey("B")!!
 
-        assertFalse(synchronizer.compareNodesByKey(nodeA, nodeB))
+        Assertions.assertFalse(synchronizer.compareNodesByKey(nodeA, nodeB))
     }
 
     @Test
@@ -81,17 +82,17 @@ class SortingTreeSynchronizerTest {
         // 相同节点
         val nodeA1Source = sourceTree.findNodeByKey("A1")!!
         val nodeA1Target = targetTree.findNodeByKey("A1")!!
-        assertTrue(synchronizer.compareNodesFully(nodeA1Source, nodeA1Target))
+        Assertions.assertTrue(synchronizer.compareNodesFully(nodeA1Source, nodeA1Target))
 
         // 数据不同
         val nodeB = sourceTree.findNodeByKey("B")!!
         val nodeBTarget = targetTree.findNodeByKey("B")!!
-        assertFalse(synchronizer.compareNodesFully(nodeB, nodeBTarget))
+        Assertions.assertFalse(synchronizer.compareNodesFully(nodeB, nodeBTarget))
 
         // 父节点不同
         val nodeA2Source = sourceTree.findNodeByKey("A2")!!
         val nodeA2Target = targetTree.findNodeByKey("A2")!!
-        assertFalse(synchronizer.compareNodesFully(nodeA2Source, nodeA2Target))
+        Assertions.assertFalse(synchronizer.compareNodesFully(nodeA2Source, nodeA2Target))
     }
 
     @Test
@@ -99,7 +100,7 @@ class SortingTreeSynchronizerTest {
         val differences = synchronizer.calculateDifferences(sourceTree, targetTree)
 
         // 验证差异数量
-        assertEquals(9, differences.size)
+        Assertions.assertEquals(9, differences.size)
 
         // 验证各类型差异的数量
         val sameCount = differences.count { it.syncType == SortingTreeSynchronizer.SyncType.SAME }
@@ -107,10 +108,10 @@ class SortingTreeSynchronizerTest {
         val deleteCount = differences.count { it.syncType == SortingTreeSynchronizer.SyncType.DELETE }
         val updateCount = differences.count { it.syncType == SortingTreeSynchronizer.SyncType.UPDATE }
 
-        assertEquals(3, sameCount) // A, A1, B1 相同
-        assertEquals(3, addCount)  // C, C1, A12 需要添加
-        assertEquals(1, deleteCount) // D 需要删除
-        assertEquals(2, updateCount) // B 数据不同, A2 父节点不同
+        Assertions.assertEquals(3, sameCount) // A, A1, B1 相同
+        Assertions.assertEquals(3, addCount)  // C, C1, A12 需要添加
+        Assertions.assertEquals(1, deleteCount) // D 需要删除
+        Assertions.assertEquals(2, updateCount) // B 数据不同, A2 父节点不同
     }
 
     @Test
@@ -119,26 +120,26 @@ class SortingTreeSynchronizerTest {
         val syncResults = synchronizer.synchronizeTrees(sourceTree, targetTree)
 
         // 验证同步后的节点数量
-        assertEquals(sourceTree.flattenTree().size, targetTree.flattenTree().size)
+        Assertions.assertEquals(sourceTree.flattenTree().size, targetTree.flattenTree().size)
 
         // 验证特定节点是否正确同步
 
         // 1. 验证节点B的数据是否更新
         val nodeBTarget = targetTree.findNodeByKey("B")!!
-        assertEquals("Node B", nodeBTarget.data)
+        Assertions.assertEquals("Node B", nodeBTarget.data)
 
         // 2. 验证节点A2的父节点是否更新
         val nodeA2Target = targetTree.findNodeByKey("A2")!!
-        assertEquals("A", nodeA2Target.parentKey)
+        Assertions.assertEquals("A", nodeA2Target.parentKey)
 
         // 3. 验证节点C是否添加
         val nodeCTarget = targetTree.findNodeByKey("C")
-        assertNotNull(nodeCTarget)
-        assertEquals("Node C", nodeCTarget!!.data)
+        Assertions.assertNotNull(nodeCTarget)
+        Assertions.assertEquals("Node C", nodeCTarget!!.data)
 
         // 4. 验证节点D是否删除
         val nodeDTarget = targetTree.findNodeByKey("D")
-        assertNull(nodeDTarget)
+        Assertions.assertNull(nodeDTarget)
     }
 
     @Test
@@ -148,18 +149,18 @@ class SortingTreeSynchronizerTest {
 
         // 验证A2节点的父节点是否更新（A的子节点）
         val nodeA2Target = targetTree.findNodeByKey("A2")!!
-        assertEquals("A", nodeA2Target.parentKey)
+        Assertions.assertEquals("A", nodeA2Target.parentKey)
 
         // 验证B节点的数据是否更新
         val nodeBTarget = targetTree.findNodeByKey("B")!!
-        assertEquals("Node B", nodeBTarget.data)
+        Assertions.assertEquals("Node B", nodeBTarget.data)
 
         // 验证C节点是否未添加（因为不在同步列表中）
         val nodeCTarget = targetTree.findNodeByKey("C")
-        assertNull(nodeCTarget)
+        Assertions.assertNull(nodeCTarget)
 
         // 验证D节点是否未删除（因为不在同步列表中）
         val nodeDTarget = targetTree.findNodeByKey("D")
-        assertNotNull(nodeDTarget)
+        Assertions.assertNotNull(nodeDTarget)
     }
 }

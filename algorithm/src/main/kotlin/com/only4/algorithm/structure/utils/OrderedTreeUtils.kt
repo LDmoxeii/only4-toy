@@ -1,4 +1,7 @@
-package com.only4.algorithm.extra
+package com.only4.algorithm.structure.utils
+
+import com.only4.algorithm.structure.DefaultSortingTreeNode
+import com.only4.algorithm.structure.SortingTreeNode
 
 /**
  * 有序多叉树工具类
@@ -16,9 +19,9 @@ object OrderedTreeUtils {
      * @return 根节点列表
      */
     fun <K, V> buildTree(
-        nodeList: Collection<OrderedTreeNode<K, V>>,
-        isRoot: (OrderedTreeNode<K, V>) -> Boolean
-    ): List<OrderedTreeNode<K, V>> {
+        nodeList: Collection<SortingTreeNode<K, V>>,
+        isRoot: (SortingTreeNode<K, V>) -> Boolean
+    ): List<SortingTreeNode<K, V>> {
         if (nodeList.isEmpty()) {
             return emptyList()
         }
@@ -53,9 +56,9 @@ object OrderedTreeUtils {
      * @return 根节点列表
      */
     fun <K, V> buildTreeByRootKey(
-        nodeList: Collection<OrderedTreeNode<K, V>>,
+        nodeList: Collection<SortingTreeNode<K, V>>,
         rootKey: K?
-    ): List<OrderedTreeNode<K, V>> {
+    ): List<SortingTreeNode<K, V>> {
         return buildTree(nodeList) { node -> node.parentKey == rootKey }
     }
 
@@ -68,13 +71,13 @@ object OrderedTreeUtils {
      * @param <V> 数据类型
      */
     private fun <K, V> buildChildrenTree(
-        parentNode: OrderedTreeNode<K, V>,
-        parentChildMap: Map<K, List<OrderedTreeNode<K, V>>>
+        parentNode: SortingTreeNode<K, V>,
+        parentChildMap: Map<K, List<SortingTreeNode<K, V>>>
     ) {
         val childNodes = parentChildMap[parentNode.key] ?: return
 
         // 清除现有的子节点
-        if (parentNode is DefaultOrderedTreeNode) {
+        if (parentNode is DefaultSortingTreeNode) {
             parentNode.children.clear()
         }
 
@@ -97,7 +100,7 @@ object OrderedTreeUtils {
      * @param <V> 数据类型
      * @return 找到的节点，如果未找到则返回null
      */
-    fun <K, V> findNodeByKey(key: K, treeList: Collection<OrderedTreeNode<K, V>>?): OrderedTreeNode<K, V>? {
+    fun <K, V> findNodeByKey(key: K, treeList: Collection<SortingTreeNode<K, V>>?): SortingTreeNode<K, V>? {
         if (treeList.isNullOrEmpty()) {
             return null
         }
@@ -124,8 +127,8 @@ object OrderedTreeUtils {
      * @param <V> 数据类型
      * @return 扁平化的节点列表（按排序值排序）
      */
-    fun <K, V> flattenTree(treeList: Collection<OrderedTreeNode<K, V>>): List<OrderedTreeNode<K, V>> {
-        val result = mutableListOf<OrderedTreeNode<K, V>>()
+    fun <K, V> flattenTree(treeList: Collection<SortingTreeNode<K, V>>): List<SortingTreeNode<K, V>> {
+        val result = mutableListOf<SortingTreeNode<K, V>>()
         flattenTreeInternal(treeList, result)
         return result.sortedBy { it.sort }
     }
@@ -140,9 +143,9 @@ object OrderedTreeUtils {
      * @return 扁平化的节点列表
      */
     fun <K, V> flattenTree(
-        treeList: Collection<OrderedTreeNode<K, V>>,
+        treeList: Collection<SortingTreeNode<K, V>>,
         traversalType: TraversalType
-    ): List<OrderedTreeNode<K, V>> {
+    ): List<SortingTreeNode<K, V>> {
         return when (traversalType) {
             TraversalType.DEPTH_FIRST -> flattenTreeDepthFirst(treeList)
             TraversalType.BREADTH_FIRST -> flattenTreeBreadthFirst(treeList)
@@ -153,9 +156,9 @@ object OrderedTreeUtils {
      * 使用深度优先遍历将树形结构转换为扁平列表
      */
     private fun <K, V> flattenTreeDepthFirst(
-        treeList: Collection<OrderedTreeNode<K, V>>
-    ): List<OrderedTreeNode<K, V>> {
-        val result = mutableListOf<OrderedTreeNode<K, V>>()
+        treeList: Collection<SortingTreeNode<K, V>>
+    ): List<SortingTreeNode<K, V>> {
+        val result = mutableListOf<SortingTreeNode<K, V>>()
         flattenTreeInternal(treeList, result)
         return result
     }
@@ -164,10 +167,10 @@ object OrderedTreeUtils {
      * 使用广度优先遍历将树形结构转换为扁平列表
      */
     private fun <K, V> flattenTreeBreadthFirst(
-        treeList: Collection<OrderedTreeNode<K, V>>
-    ): List<OrderedTreeNode<K, V>> {
-        val result = mutableListOf<OrderedTreeNode<K, V>>()
-        val queue = ArrayDeque<OrderedTreeNode<K, V>>()
+        treeList: Collection<SortingTreeNode<K, V>>
+    ): List<SortingTreeNode<K, V>> {
+        val result = mutableListOf<SortingTreeNode<K, V>>()
+        val queue = ArrayDeque<SortingTreeNode<K, V>>()
 
         // 添加所有根节点到队列
         queue.addAll(treeList)
@@ -201,8 +204,8 @@ object OrderedTreeUtils {
      * 递归地将树节点添加到扁平列表中
      */
     private fun <K, V> flattenTreeInternal(
-        treeList: Collection<OrderedTreeNode<K, V>>,
-        result: MutableList<OrderedTreeNode<K, V>>
+        treeList: Collection<SortingTreeNode<K, V>>,
+        result: MutableList<SortingTreeNode<K, V>>
     ) {
         for (node in treeList) {
             result.add(node)
@@ -219,7 +222,7 @@ object OrderedTreeUtils {
      * @param <V> 数据类型
      * @return 找到的节点，如果未找到则返回null
      */
-    fun <K, V> findNodeByPath(nodePath: String, rootNodes: Collection<OrderedTreeNode<K, V>>): OrderedTreeNode<K, V>? {
+    fun <K, V> findNodeByPath(nodePath: String, rootNodes: Collection<SortingTreeNode<K, V>>): SortingTreeNode<K, V>? {
         if (rootNodes.isEmpty()) {
             return null
         }
@@ -231,7 +234,7 @@ object OrderedTreeUtils {
 
         // 查找起始节点
         var currentLevel = rootNodes
-        var currentNode: OrderedTreeNode<K, V>? = null
+        var currentNode: SortingTreeNode<K, V>? = null
 
         for (element in pathParts) {
             currentNode = currentLevel.find { it.nodePath.endsWith(element) }
@@ -252,8 +255,8 @@ object OrderedTreeUtils {
      * @param <V> 数据类型
      * @return 节点及其所有子孙节点的列表
      */
-    fun <K, V> getNodeAndDescendants(node: OrderedTreeNode<K, V>): List<OrderedTreeNode<K, V>> {
-        val result = mutableListOf<OrderedTreeNode<K, V>>()
+    fun <K, V> getNodeAndDescendants(node: SortingTreeNode<K, V>): List<SortingTreeNode<K, V>> {
+        val result = mutableListOf<SortingTreeNode<K, V>>()
         result.add(node)
         collectDescendants(node.children, result)
         return result
@@ -263,8 +266,8 @@ object OrderedTreeUtils {
      * 递归收集子孙节点
      */
     private fun <K, V> collectDescendants(
-        children: Collection<OrderedTreeNode<K, V>>,
-        result: MutableList<OrderedTreeNode<K, V>>
+        children: Collection<SortingTreeNode<K, V>>,
+        result: MutableList<SortingTreeNode<K, V>>
     ) {
         for (child in children) {
             result.add(child)
@@ -291,13 +294,13 @@ object OrderedTreeUtils {
         parentKeyExtractor: (T) -> K,
         dataExtractor: (T) -> V,
         isRoot: (T) -> Boolean
-    ): List<OrderedTreeNode<K, V>> {
+    ): List<SortingTreeNode<K, V>> {
         // 将数据转换为树节点
         val rootSort = 1L
         var sortCounter = rootSort
 
         // 首先处理根节点
-        val rootNodes = mutableListOf<OrderedTreeNode<K, V>>()
+        val rootNodes = mutableListOf<SortingTreeNode<K, V>>()
         val childDataItems = mutableListOf<T>()
 
         // 分离根节点和子节点
@@ -307,7 +310,7 @@ object OrderedTreeUtils {
                 val parentKey = parentKeyExtractor(item)
                 val data = dataExtractor(item)
                 val nodePath = "$key"
-                val node = DefaultOrderedTreeNode(key, parentKey, sortCounter++, nodePath, data)
+                val node = DefaultSortingTreeNode(key, parentKey, sortCounter++, nodePath, data)
                 rootNodes.add(node)
             } else {
                 childDataItems.add(item)
@@ -337,7 +340,7 @@ object OrderedTreeUtils {
                 val childIndex = (parentNode.children.size + 1).toLong()
                 val sort = parentNode.sort * 100 + childIndex
 
-                val node = DefaultOrderedTreeNode(key, parentKey, sort, nodePath, data)
+                val node = DefaultSortingTreeNode(key, parentKey, sort, nodePath, data)
                 parentNode.children.add(node)
                 nodeMap[key] = node
                 processed.add(item)
@@ -380,7 +383,7 @@ object OrderedTreeUtils {
         parentKeyExtractor: (T) -> K,
         dataExtractor: (T) -> V,
         rootParentKey: K?
-    ): List<OrderedTreeNode<K, V>> {
+    ): List<SortingTreeNode<K, V>> {
         return buildTreeFromList(
             dataList,
             keyExtractor,

@@ -1,4 +1,8 @@
-package com.only4.algorithm.extra
+package com.only4.algorithm.structure.def
+
+import com.only4.algorithm.structure.AbstractSortingMultipleTree
+import com.only4.algorithm.structure.DefaultSortingTreeNode
+import com.only4.algorithm.structure.SortingTreeNode
 
 /**
  * 有序多叉树实现类
@@ -13,12 +17,12 @@ class DefaultSortingMultipleTree<K, V>(
     val pathSeparator: String = "/",
     // 节点排序基数
     val sortBase: Long = 100L,
-) : AbstractSortingMultipleTree<K, V>(), SortingMultipleTree<K, V> {
+) : AbstractSortingMultipleTree<K, V>() {
 
     /**
      * 添加节点（自动分配排序值）
      */
-    override fun addNode(key: K, parentKey: K, data: V): OrderedTreeNode<K, V> {
+    override fun addNode(key: K, parentKey: K, data: V): SortingTreeNode<K, V> {
         // 检查键是否已存在
         require(!nodeMap.containsKey(key)) { "Node with key $key already exists" }
 
@@ -32,7 +36,7 @@ class DefaultSortingMultipleTree<K, V>(
     /**
      * 添加节点（指定排序值）
      */
-    override fun addNode(key: K, parentKey: K, data: V, sort: Long): OrderedTreeNode<K, V> {
+    override fun addNode(key: K, parentKey: K, data: V, sort: Long): SortingTreeNode<K, V> {
         // 检查键是否已存在
         require(!nodeMap.containsKey(key)) { "Node with key $key already exists" }
 
@@ -51,7 +55,7 @@ class DefaultSortingMultipleTree<K, V>(
         val nodePath = generateNodePath(key, parentKey)
 
         // 创建节点
-        val node = DefaultOrderedTreeNode(key, parentKey, actualSort, nodePath, data)
+        val node = DefaultSortingTreeNode(key, parentKey, actualSort, nodePath, data)
 
         // 检查是否需要解决排序冲突
         handleSortConflict(parentKey, actualSort)
@@ -88,14 +92,14 @@ class DefaultSortingMultipleTree<K, V>(
     /**
      * 获取树的根节点列表
      */
-    override fun getRootNodes(): List<OrderedTreeNode<K, V>> {
+    override fun getRootNodes(): List<SortingTreeNode<K, V>> {
         return getChildren(dummyKey)
     }
 
     /**
      * 将树转换为扁平列表
      */
-    override fun flattenTree(): List<OrderedTreeNode<K, V>> {
+    override fun flattenTree(): List<SortingTreeNode<K, V>> {
         return nodeMap.values.sortedBy { it.sort }
     }
 
@@ -143,7 +147,7 @@ class DefaultSortingMultipleTree<K, V>(
         if (conflictNodes.isNotEmpty()) {
             // 将冲突的节点排序值递增
             for (node in conflictNodes.sortedBy { it.sort }) {
-                if (node is DefaultOrderedTreeNode) {
+                if (node is DefaultSortingTreeNode) {
                     val oldSort = node.sort
                     val newSortIndex = getSortIndex(oldSort) + 1
                     node.sort = parentSort * sortBase + newSortIndex
@@ -162,7 +166,7 @@ class DefaultSortingMultipleTree<K, V>(
         val children = parentChildMap[parentKey] ?: return
 
         for (child in children) {
-            if (child is DefaultOrderedTreeNode) {
+            if (child is DefaultSortingTreeNode) {
                 val childSortIndex = getSortIndex(child.sort)
                 val newSort = newParentSort * sortBase + childSortIndex
 
@@ -185,7 +189,7 @@ class DefaultSortingMultipleTree<K, V>(
         val nodesToMove = children.filter { getSortIndex(it.sort) > removedSort }
 
         for (node in nodesToMove) {
-            if (node is DefaultOrderedTreeNode) {
+            if (node is DefaultSortingTreeNode) {
                 val oldSort = node.sort
                 val newSortIndex = getSortIndex(oldSort) - 1
                 val parentSort = getParentSort(oldSort)
@@ -203,7 +207,7 @@ class DefaultSortingMultipleTree<K, V>(
     /**
      * 递归删除节点及其子节点
      */
-    override fun recursiveRemove(node: OrderedTreeNode<K, V>) {
+    override fun recursiveRemove(node: SortingTreeNode<K, V>) {
         // 首先递归删除所有子节点
         val childrenCopy = node.children.toList()
         for (child in childrenCopy) {
@@ -246,7 +250,7 @@ class DefaultSortingMultipleTree<K, V>(
     /**
      * 移动节点到新的父节点下
      */
-    override fun moveNode(key: K, newParentKey: K, newSort: Long?): OrderedTreeNode<K, V>? {
+    override fun moveNode(key: K, newParentKey: K, newSort: Long?): SortingTreeNode<K, V>? {
         // 查找节点
         val node = findNodeByKey(key) ?: return null
         return moveNode(node, newParentKey, newSort)
@@ -255,9 +259,9 @@ class DefaultSortingMultipleTree<K, V>(
     /**
      * 移动节点到新的父节点下
      */
-    override fun moveNode(node: OrderedTreeNode<K, V>, newParentKey: K, newSort: Long?): OrderedTreeNode<K, V> {
+    override fun moveNode(node: SortingTreeNode<K, V>, newParentKey: K, newSort: Long?): SortingTreeNode<K, V> {
         // 检查参数
-        require(node is DefaultOrderedTreeNode) { "Node must be an instance of DefaultOrderedTreeNode" }
+        require(node is DefaultSortingTreeNode) { "Node must be an instance of DefaultOrderedTreeNode" }
 
         val nodeKey = node.key
         val oldParentKey = node.parentKey
@@ -349,8 +353,8 @@ class DefaultSortingMultipleTree<K, V>(
     /**
      * 批量移动节点到新的父节点下
      */
-    override fun moveNodes(keys: Collection<K>, newParentKey: K): List<OrderedTreeNode<K, V>> {
-        val result = mutableListOf<OrderedTreeNode<K, V>>()
+    override fun moveNodes(keys: Collection<K>, newParentKey: K): List<SortingTreeNode<K, V>> {
+        val result = mutableListOf<SortingTreeNode<K, V>>()
 
         // 先检查所有节点是否存在
         val nodesToMove = keys.mapNotNull { findNodeByKey(it) }
@@ -381,7 +385,7 @@ class DefaultSortingMultipleTree<K, V>(
     /**
      * 通过节点路径移动节点
      */
-    override fun moveNodeByPath(nodePath: String, newParentPath: String): OrderedTreeNode<K, V> {
+    override fun moveNodeByPath(nodePath: String, newParentPath: String): SortingTreeNode<K, V> {
         // 查找源节点和目标父节点
         val node = pathNodeMap[nodePath]
         val newParentNode = pathNodeMap[newParentPath]
@@ -427,7 +431,7 @@ class DefaultSortingMultipleTree<K, V>(
     ) {
         // 批量更新所有子孙节点
         getDescendants(odlNodePath).forEach { descendant ->
-            if (descendant is DefaultOrderedTreeNode) {
+            if (descendant is DefaultSortingTreeNode) {
                 // 1. 更新路径
                 val oldPath = descendant.nodePath
                 val newPath = oldPath.replace(oldBasePath, newBasePath)

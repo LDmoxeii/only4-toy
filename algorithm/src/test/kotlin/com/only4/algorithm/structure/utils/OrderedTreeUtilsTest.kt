@@ -1,5 +1,7 @@
-package com.only4.algorithm.extra
+package com.only4.algorithm.structure.utils
 
+import com.only4.algorithm.structure.DefaultSortingTreeNode
+import com.only4.algorithm.structure.SortingTreeNode
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -17,12 +19,12 @@ class OrderedTreeUtilsTest {
         @Test
         fun `根据节点列表构建树 - 使用自定义判断函数`() {
             // 准备测试数据
-            val node1 = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根节点1")
-            val node2 = DefaultOrderedTreeNode("2", "dummy", 2L, "2", "根节点2")
-            val node3 = DefaultOrderedTreeNode("3", "1", 101L, "1/3", "子节点3")
-            val node4 = DefaultOrderedTreeNode("4", "1", 102L, "1/4", "子节点4")
-            val node5 = DefaultOrderedTreeNode("5", "2", 201L, "2/5", "子节点5")
-            val node6 = DefaultOrderedTreeNode("6", "3", 10101L, "1/3/6", "孙节点6")
+            val node1 = DefaultSortingTreeNode("1", "dummy", 1L, "1", "根节点1")
+            val node2 = DefaultSortingTreeNode("2", "dummy", 2L, "2", "根节点2")
+            val node3 = DefaultSortingTreeNode("3", "1", 101L, "1/3", "子节点3")
+            val node4 = DefaultSortingTreeNode("4", "1", 102L, "1/4", "子节点4")
+            val node5 = DefaultSortingTreeNode("5", "2", 201L, "2/5", "子节点5")
+            val node6 = DefaultSortingTreeNode("6", "3", 10101L, "1/3/6", "孙节点6")
 
             val nodeList = listOf(node1, node2, node3, node4, node5, node6)
 
@@ -53,12 +55,12 @@ class OrderedTreeUtilsTest {
         @Test
         fun `根据节点列表构建树 - 使用指定根节点键`() {
             // 准备测试数据 - 使用与上一个测试相同的数据结构
-            val node1 = DefaultOrderedTreeNode("1", "root", 1001L, "1", "节点1")
-            val node2 = DefaultOrderedTreeNode("2", "root", 1002L, "2", "节点2")
-            val node3 = DefaultOrderedTreeNode("3", "1", 100101L, "1/3", "节点3")
-            val node4 = DefaultOrderedTreeNode("4", "1", 100102L, "1/4", "节点4")
-            val node5 = DefaultOrderedTreeNode("5", "2", 100201L, "2/5", "节点5")
-            val node6 = DefaultOrderedTreeNode("6", "3", 10010101L, "1/3/6", "节点6")
+            val node1 = DefaultSortingTreeNode("1", "root", 1001L, "1", "节点1")
+            val node2 = DefaultSortingTreeNode("2", "root", 1002L, "2", "节点2")
+            val node3 = DefaultSortingTreeNode("3", "1", 100101L, "1/3", "节点3")
+            val node4 = DefaultSortingTreeNode("4", "1", 100102L, "1/4", "节点4")
+            val node5 = DefaultSortingTreeNode("5", "2", 100201L, "2/5", "节点5")
+            val node6 = DefaultSortingTreeNode("6", "3", 10010101L, "1/3/6", "节点6")
 
             val nodeList = listOf(node1, node2, node3, node4, node5, node6)
 
@@ -78,7 +80,7 @@ class OrderedTreeUtilsTest {
 
         @Test
         fun `处理空节点列表`() {
-            val emptyList = emptyList<OrderedTreeNode<String, String>>()
+            val emptyList = emptyList<SortingTreeNode<String, String>>()
             val result = OrderedTreeUtils.buildTree(emptyList) { it.parentKey == "dummy" }
             assertTrue(result.isEmpty())
         }
@@ -86,8 +88,8 @@ class OrderedTreeUtilsTest {
         @Test
         fun `处理没有根节点的列表`() {
             // 所有节点都有父节点，没有根节点
-            val node1 = DefaultOrderedTreeNode("1", "parent", 1L, "1", "节点1")
-            val node2 = DefaultOrderedTreeNode("2", "parent", 2L, "2", "节点2")
+            val node1 = DefaultSortingTreeNode("1", "parent", 1L, "1", "节点1")
+            val node2 = DefaultSortingTreeNode("2", "parent", 2L, "2", "节点2")
 
             val nodeList = listOf(node1, node2)
             val result = OrderedTreeUtils.buildTree(nodeList) { it.parentKey == "dummy" }
@@ -97,10 +99,10 @@ class OrderedTreeUtilsTest {
         @Test
         fun `处理循环依赖`() {
             // 创建循环依赖： A → B → C → A
-            val nodeA = DefaultOrderedTreeNode("A", "C", 1L, "A", "节点A")
-            val nodeB = DefaultOrderedTreeNode("B", "A", 2L, "B", "节点B")
-            val nodeC = DefaultOrderedTreeNode("C", "B", 3L, "C", "节点C")
-            val nodeRoot = DefaultOrderedTreeNode("root", "dummy", 0L, "root", "根节点")
+            val nodeA = DefaultSortingTreeNode("A", "C", 1L, "A", "节点A")
+            val nodeB = DefaultSortingTreeNode("B", "A", 2L, "B", "节点B")
+            val nodeC = DefaultSortingTreeNode("C", "B", 3L, "C", "节点C")
+            val nodeRoot = DefaultSortingTreeNode("root", "dummy", 0L, "root", "根节点")
 
             val nodeList = listOf(nodeA, nodeB, nodeC, nodeRoot)
             val result = OrderedTreeUtils.buildTree(nodeList) { it.parentKey == "dummy" }
@@ -115,18 +117,18 @@ class OrderedTreeUtilsTest {
         @Test
         fun `处理复杂树结构 - 具有多级子节点`() {
             // 构建一个较复杂的树结构，包含多级子节点
-            val root1 = DefaultOrderedTreeNode("root1", "dummy", 1L, "root1", "根1")
-            val root2 = DefaultOrderedTreeNode("root2", "dummy", 2L, "root2", "根2")
+            val root1 = DefaultSortingTreeNode("root1", "dummy", 1L, "root1", "根1")
+            val root2 = DefaultSortingTreeNode("root2", "dummy", 2L, "root2", "根2")
 
-            val child1 = DefaultOrderedTreeNode("child1", "root1", 101L, "root1/child1", "子1")
-            val child2 = DefaultOrderedTreeNode("child2", "root1", 102L, "root1/child2", "子2")
-            val child3 = DefaultOrderedTreeNode("child3", "root2", 201L, "root2/child3", "子3")
+            val child1 = DefaultSortingTreeNode("child1", "root1", 101L, "root1/child1", "子1")
+            val child2 = DefaultSortingTreeNode("child2", "root1", 102L, "root1/child2", "子2")
+            val child3 = DefaultSortingTreeNode("child3", "root2", 201L, "root2/child3", "子3")
 
-            val grandchild1 = DefaultOrderedTreeNode("gc1", "child1", 10101L, "root1/child1/gc1", "孙1")
-            val grandchild2 = DefaultOrderedTreeNode("gc2", "child1", 10102L, "root1/child1/gc2", "孙2")
-            val grandchild3 = DefaultOrderedTreeNode("gc3", "child2", 10201L, "root1/child2/gc3", "孙3")
+            val grandchild1 = DefaultSortingTreeNode("gc1", "child1", 10101L, "root1/child1/gc1", "孙1")
+            val grandchild2 = DefaultSortingTreeNode("gc2", "child1", 10102L, "root1/child1/gc2", "孙2")
+            val grandchild3 = DefaultSortingTreeNode("gc3", "child2", 10201L, "root1/child2/gc3", "孙3")
 
-            val greatgrandchild1 = DefaultOrderedTreeNode("ggc1", "gc1", 1010101L, "root1/child1/gc1/ggc1", "曾孙1")
+            val greatgrandchild1 = DefaultSortingTreeNode("ggc1", "gc1", 1010101L, "root1/child1/gc1/ggc1", "曾孙1")
 
             // 打乱顺序添加到列表中
             val nodeList = listOf(
@@ -353,11 +355,11 @@ class OrderedTreeUtilsTest {
         @Test
         fun `通过键查找节点`() {
             // 构建测试树
-            val root1 = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根1")
-            val root2 = DefaultOrderedTreeNode("2", "dummy", 2L, "2", "根2")
-            val child1 = DefaultOrderedTreeNode("3", "1", 101L, "1/3", "子1")
-            val child2 = DefaultOrderedTreeNode("4", "1", 102L, "1/4", "子2")
-            val grandchild = DefaultOrderedTreeNode("5", "3", 10101L, "1/3/5", "孙1")
+            val root1 = DefaultSortingTreeNode("1", "dummy", 1L, "1", "根1")
+            val root2 = DefaultSortingTreeNode("2", "dummy", 2L, "2", "根2")
+            val child1 = DefaultSortingTreeNode("3", "1", 101L, "1/3", "子1")
+            val child2 = DefaultSortingTreeNode("4", "1", 102L, "1/4", "子2")
+            val grandchild = DefaultSortingTreeNode("5", "3", 10101L, "1/3/5", "孙1")
 
             root1.children.addAll(listOf(child1, child2))
             child1.children.add(grandchild)
@@ -380,11 +382,11 @@ class OrderedTreeUtilsTest {
         @Test
         fun `通过路径查找节点`() {
             // 构建测试树
-            val root1 = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根1")
-            val root2 = DefaultOrderedTreeNode("2", "dummy", 2L, "2", "根2")
-            val child1 = DefaultOrderedTreeNode("3", "1", 101L, "1/3", "子1")
-            val child2 = DefaultOrderedTreeNode("4", "1", 102L, "1/4", "子2")
-            val grandchild = DefaultOrderedTreeNode("5", "3", 10101L, "1/3/5", "孙1")
+            val root1 = DefaultSortingTreeNode("1", "dummy", 1L, "1", "根1")
+            val root2 = DefaultSortingTreeNode("2", "dummy", 2L, "2", "根2")
+            val child1 = DefaultSortingTreeNode("3", "1", 101L, "1/3", "子1")
+            val child2 = DefaultSortingTreeNode("4", "1", 102L, "1/4", "子2")
+            val grandchild = DefaultSortingTreeNode("5", "3", 10101L, "1/3/5", "孙1")
 
             root1.children.addAll(listOf(child1, child2))
             child1.children.add(grandchild)
@@ -412,12 +414,12 @@ class OrderedTreeUtilsTest {
         @Test
         fun `将树扁平化为列表`() {
             // 构建测试树
-            val root1 = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根1")
-            val root2 = DefaultOrderedTreeNode("2", "dummy", 2L, "2", "根2")
-            val child1 = DefaultOrderedTreeNode("3", "1", 101L, "1/3", "子1")
-            val child2 = DefaultOrderedTreeNode("4", "1", 102L, "1/4", "子2")
-            val child3 = DefaultOrderedTreeNode("5", "2", 201L, "2/5", "子3")
-            val grandchild = DefaultOrderedTreeNode("6", "3", 10101L, "1/3/6", "孙1")
+            val root1 = DefaultSortingTreeNode("1", "dummy", 1L, "1", "根1")
+            val root2 = DefaultSortingTreeNode("2", "dummy", 2L, "2", "根2")
+            val child1 = DefaultSortingTreeNode("3", "1", 101L, "1/3", "子1")
+            val child2 = DefaultSortingTreeNode("4", "1", 102L, "1/4", "子2")
+            val child3 = DefaultSortingTreeNode("5", "2", 201L, "2/5", "子3")
+            val grandchild = DefaultSortingTreeNode("6", "3", 10101L, "1/3/6", "孙1")
 
             root1.children.addAll(listOf(child1, child2))
             root2.children.add(child3)
@@ -443,11 +445,11 @@ class OrderedTreeUtilsTest {
         @Test
         fun `深度优先遍历扁平化树`() {
             // 构建测试树
-            val root1 = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根1")
-            val child1 = DefaultOrderedTreeNode("2", "1", 101L, "1/2", "子1")
-            val child2 = DefaultOrderedTreeNode("3", "1", 102L, "1/3", "子2")
-            val grandchild1 = DefaultOrderedTreeNode("4", "2", 10101L, "1/2/4", "孙1")
-            val grandchild2 = DefaultOrderedTreeNode("5", "3", 10201L, "1/3/5", "孙2")
+            val root1 = DefaultSortingTreeNode("1", "dummy", 1L, "1", "根1")
+            val child1 = DefaultSortingTreeNode("2", "1", 101L, "1/2", "子1")
+            val child2 = DefaultSortingTreeNode("3", "1", 102L, "1/3", "子2")
+            val grandchild1 = DefaultSortingTreeNode("4", "2", 10101L, "1/2/4", "孙1")
+            val grandchild2 = DefaultSortingTreeNode("5", "3", 10201L, "1/3/5", "孙2")
 
             // 构建树结构
             root1.children.addAll(listOf(child1, child2))
@@ -471,11 +473,11 @@ class OrderedTreeUtilsTest {
         @Test
         fun `广度优先遍历扁平化树`() {
             // 构建测试树
-            val root1 = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根1")
-            val child1 = DefaultOrderedTreeNode("2", "1", 101L, "1/2", "子1")
-            val child2 = DefaultOrderedTreeNode("3", "1", 102L, "1/3", "子2")
-            val grandchild1 = DefaultOrderedTreeNode("4", "2", 10101L, "1/2/4", "孙1")
-            val grandchild2 = DefaultOrderedTreeNode("5", "3", 10201L, "1/3/5", "孙2")
+            val root1 = DefaultSortingTreeNode("1", "dummy", 1L, "1", "根1")
+            val child1 = DefaultSortingTreeNode("2", "1", 101L, "1/2", "子1")
+            val child2 = DefaultSortingTreeNode("3", "1", 102L, "1/3", "子2")
+            val grandchild1 = DefaultSortingTreeNode("4", "2", 10101L, "1/2/4", "孙1")
+            val grandchild2 = DefaultSortingTreeNode("5", "3", 10201L, "1/3/5", "孙2")
 
             // 构建树结构
             root1.children.addAll(listOf(child1, child2))
@@ -507,14 +509,14 @@ class OrderedTreeUtilsTest {
             //     /
             //    H
 
-            val nodeA = DefaultOrderedTreeNode("A", "dummy", 1L, "A", "节点A")
-            val nodeB = DefaultOrderedTreeNode("B", "A", 101L, "A/B", "节点B")
-            val nodeC = DefaultOrderedTreeNode("C", "A", 102L, "A/C", "节点C")
-            val nodeD = DefaultOrderedTreeNode("D", "B", 10101L, "A/B/D", "节点D")
-            val nodeE = DefaultOrderedTreeNode("E", "B", 10102L, "A/B/E", "节点E")
-            val nodeF = DefaultOrderedTreeNode("F", "C", 10201L, "A/C/F", "节点F")
-            val nodeG = DefaultOrderedTreeNode("G", "C", 10202L, "A/C/G", "节点G")
-            val nodeH = DefaultOrderedTreeNode("H", "E", 1010201L, "A/B/E/H", "节点H")
+            val nodeA = DefaultSortingTreeNode("A", "dummy", 1L, "A", "节点A")
+            val nodeB = DefaultSortingTreeNode("B", "A", 101L, "A/B", "节点B")
+            val nodeC = DefaultSortingTreeNode("C", "A", 102L, "A/C", "节点C")
+            val nodeD = DefaultSortingTreeNode("D", "B", 10101L, "A/B/D", "节点D")
+            val nodeE = DefaultSortingTreeNode("E", "B", 10102L, "A/B/E", "节点E")
+            val nodeF = DefaultSortingTreeNode("F", "C", 10201L, "A/C/F", "节点F")
+            val nodeG = DefaultSortingTreeNode("G", "C", 10202L, "A/C/G", "节点G")
+            val nodeH = DefaultSortingTreeNode("H", "E", 1010201L, "A/B/E/H", "节点H")
 
             // 构建树结构
             nodeA.children.addAll(listOf(nodeB, nodeC))
@@ -556,12 +558,12 @@ class OrderedTreeUtilsTest {
         @Test
         fun `获取节点及其所有子孙节点`() {
             // 构建测试树
-            val root = DefaultOrderedTreeNode("1", "dummy", 1L, "1", "根1")
-            val child1 = DefaultOrderedTreeNode("2", "1", 101L, "1/2", "子1")
-            val child2 = DefaultOrderedTreeNode("3", "1", 102L, "1/3", "子2")
-            val grandchild1 = DefaultOrderedTreeNode("4", "2", 10101L, "1/2/4", "孙1")
-            val grandchild2 = DefaultOrderedTreeNode("5", "2", 10102L, "1/2/5", "孙2")
-            val greatgrandchild = DefaultOrderedTreeNode("6", "4", 1010101L, "1/2/4/6", "曾孙1")
+            val root = DefaultSortingTreeNode("1", "dummy", 1L, "1", "根1")
+            val child1 = DefaultSortingTreeNode("2", "1", 101L, "1/2", "子1")
+            val child2 = DefaultSortingTreeNode("3", "1", 102L, "1/3", "子2")
+            val grandchild1 = DefaultSortingTreeNode("4", "2", 10101L, "1/2/4", "孙1")
+            val grandchild2 = DefaultSortingTreeNode("5", "2", 10102L, "1/2/5", "孙2")
+            val greatgrandchild = DefaultSortingTreeNode("6", "4", 1010101L, "1/2/4/6", "曾孙1")
 
             root.children.addAll(listOf(child1, child2))
             child1.children.addAll(listOf(grandchild1, grandchild2))

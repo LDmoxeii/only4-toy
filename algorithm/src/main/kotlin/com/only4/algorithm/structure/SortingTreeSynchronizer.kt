@@ -1,4 +1,4 @@
-package com.only4.algorithm.extra
+package com.only4.algorithm.structure
 
 /**
  * 有序多叉树同步器接口
@@ -23,7 +23,7 @@ interface SortingTreeSynchronizer<K, V> {
      * 同步结果数据类
      */
     data class SyncResult<K, V>(
-        val node: OrderedTreeNode<K, V>,
+        val node: SortingTreeNode<K, V>,
         val syncType: SyncType,
         val isSyncNeeded: Boolean = false
     )
@@ -36,7 +36,7 @@ interface SortingTreeSynchronizer<K, V> {
      * @param node2 第二个节点
      * @return 如果唯一键相同返回true，否则返回false
      */
-    fun compareNodesByKey(node1: OrderedTreeNode<K, V>, node2: OrderedTreeNode<K, V>): Boolean
+    fun compareNodesByKey(node1: SortingTreeNode<K, V>, node2: SortingTreeNode<K, V>): Boolean
 
     /**
      * 比较两个节点是否完全相同
@@ -46,7 +46,7 @@ interface SortingTreeSynchronizer<K, V> {
      * @param node2 第二个节点
      * @return 如果父节点唯一键、节点排序值和节点数据都相同返回true，否则返回false
      */
-    fun compareNodesFully(node1: OrderedTreeNode<K, V>, node2: OrderedTreeNode<K, V>): Boolean
+    fun compareNodesFully(node1: SortingTreeNode<K, V>, node2: SortingTreeNode<K, V>): Boolean
 
     /**
      * 统计两棵树之间的差异
