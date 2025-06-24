@@ -12,11 +12,11 @@ import com.only4.algorithm.structure.SortingTreeNode
  */
 class DefaultSortingMultipleTree<K, V>(
     // 根节点的虚拟父键标识
-    private val dummyKey: K,
+    override val dummyKey: K,
     // 路径分隔符
-    val pathSeparator: String = "/",
+    override val pathSeparator: String = "/",
     // 节点排序基数
-    val sortBase: Long = 100L,
+    override val sortBase: Long = 100L,
 ) : AbstractSortingMultipleTree<K, V>() {
 
     /**

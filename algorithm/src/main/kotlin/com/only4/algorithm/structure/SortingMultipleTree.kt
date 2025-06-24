@@ -5,6 +5,15 @@ package com.only4.algorithm.structure
  * 后续将实现此接口
  */
 interface SortingMultipleTree<K, V> {
+    // 根节点的虚拟父键标识
+    val dummyKey: K
+
+    // 路径分隔符
+    val pathSeparator: String
+
+    // 节点排序基数
+    val sortBase: Long
+
     /**
      * 添加节点（自动分配排序值）
      *
