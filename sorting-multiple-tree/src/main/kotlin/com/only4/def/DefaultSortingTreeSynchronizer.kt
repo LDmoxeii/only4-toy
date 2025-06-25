@@ -1,10 +1,10 @@
-package com.only4.algorithm.structure.def
+package com.only4.def
 
-import com.only4.algorithm.structure.SortingMultipleTree
-import com.only4.algorithm.structure.SortingTreeNode
-import com.only4.algorithm.structure.SortingTreeSynchronizer
-import com.only4.algorithm.structure.SortingTreeSynchronizer.SyncResult
-import com.only4.algorithm.structure.SortingTreeSynchronizer.SyncType
+import com.only4.SortingMultipleTree
+import com.only4.SortingTreeNode
+import com.only4.SortingTreeSynchronizer
+import com.only4.SortingTreeSynchronizer.SyncResult
+import com.only4.SortingTreeSynchronizer.SyncType
 
 /**
  * 有序多叉树同步器默认实现

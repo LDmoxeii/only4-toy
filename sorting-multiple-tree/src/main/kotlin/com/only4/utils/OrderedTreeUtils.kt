@@ -1,7 +1,7 @@
-package com.only4.algorithm.structure.utils
+package com.only4.utils
 
-import com.only4.algorithm.structure.DefaultSortingTreeNode
-import com.only4.algorithm.structure.SortingTreeNode
+import com.only4.DefaultSortingTreeNode
+import com.only4.SortingTreeNode
 
 /**
  * 有序多叉树工具类

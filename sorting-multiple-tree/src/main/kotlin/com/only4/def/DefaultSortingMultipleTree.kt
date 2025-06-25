@@ -1,8 +1,8 @@
-package com.only4.algorithm.structure.def
+package com.only4.def
 
-import com.only4.algorithm.structure.AbstractSortingMultipleTree
-import com.only4.algorithm.structure.DefaultSortingTreeNode
-import com.only4.algorithm.structure.SortingTreeNode
+import com.only4.AbstractSortingMultipleTree
+import com.only4.DefaultSortingTreeNode
+import com.only4.SortingTreeNode
 
 /**
  * 有序多叉树实现类

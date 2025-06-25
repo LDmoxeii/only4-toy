@@ -1,4 +1,4 @@
-package com.only4.algorithm.structure
+package com.only4
 
 /**
  * 有序多叉树实现接口
