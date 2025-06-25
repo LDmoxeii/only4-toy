@@ -1,10 +1,7 @@
-package com.only4.def
+package com.only4.synchronizer
 
-import com.only4.SortingMultipleTree
-import com.only4.SortingTreeNode
-import com.only4.SortingTreeSynchronizer
-import com.only4.SortingTreeSynchronizer.SyncResult
-import com.only4.SortingTreeSynchronizer.SyncType
+import com.only4.tree.SortingMultipleTree
+import com.only4.tree.SortingTreeNode
 
 /**
  * 有序多叉树同步器默认实现
@@ -23,7 +20,7 @@ class DefaultSortingTreeSynchronizer<K, V>(
     override fun calculateDifferences(
         sourceTree: SortingMultipleTree<K, V>,
         targetTree: SortingMultipleTree<K, V>
-    ): List<SyncResult<K, V>> {
+    ): List<SortingTreeSynchronizer.SyncResult<K, V>> {
         val sourceNodeMap = sourceTree.flattenTree().associateBy { it.key }
         val targetNodeMap = targetTree.flattenTree().associateBy { it.key }
         return calculateDifferences(sourceTree, targetTree, sourceNodeMap, targetNodeMap)
@@ -34,20 +31,27 @@ class DefaultSortingTreeSynchronizer<K, V>(
         targetTree: SortingMultipleTree<K, V>,
         sourceNodeMap: Map<K, SortingTreeNode<K, V>>,
         targetNodeMap: Map<K, SortingTreeNode<K, V>>
-    ): List<SyncResult<K, V>> {
+    ): List<SortingTreeSynchronizer.SyncResult<K, V>> {
         val allKeys = sourceNodeMap.keys + targetNodeMap.keys
         return allKeys.mapNotNull { key ->
             val sourceNode = sourceNodeMap[key]
             val targetNode = targetNodeMap[key]
 
             when {
-                sourceNode != null && targetNode == null -> SyncResult(sourceNode, SyncType.ADD)
-                sourceNode == null && targetNode != null -> SyncResult(targetNode, SyncType.DELETE)
+                sourceNode != null && targetNode == null -> SortingTreeSynchronizer.SyncResult(
+                    sourceNode,
+                    SortingTreeSynchronizer.SyncType.ADD
+                )
+
+                sourceNode == null && targetNode != null -> SortingTreeSynchronizer.SyncResult(
+                    targetNode,
+                    SortingTreeSynchronizer.SyncType.DELETE
+                )
                 sourceNode != null && targetNode != null -> {
                     if (compareNodesFully(sourceNode, targetNode, sourceTree, targetTree)) {
-                        SyncResult(sourceNode, SyncType.SAME)
+                        SortingTreeSynchronizer.SyncResult(sourceNode, SortingTreeSynchronizer.SyncType.SAME)
                     } else {
-                        SyncResult(sourceNode, SyncType.UPDATE)
+                        SortingTreeSynchronizer.SyncResult(sourceNode, SortingTreeSynchronizer.SyncType.UPDATE)
                     }
                 }
 
@@ -95,7 +99,7 @@ class DefaultSortingTreeSynchronizer<K, V>(
         sourceTree: SortingMultipleTree<K, V>,
         targetTree: SortingMultipleTree<K, V>,
         keys: Collection<K>
-    ): List<SyncResult<K, V>> {
+    ): List<SortingTreeSynchronizer.SyncResult<K, V>> {
         val sourceNodeMap = sourceTree.flattenTree().associateBy { it.key }
         val targetNodeMap = targetTree.flattenTree().associateBy { it.key }
 
@@ -125,8 +129,8 @@ class DefaultSortingTreeSynchronizer<K, V>(
     override fun synchronizeTreesByResults(
         sourceTree: SortingMultipleTree<K, V>,
         targetTree: SortingMultipleTree<K, V>,
-        syncResults: Collection<SyncResult<K, V>>
-    ): List<SyncResult<K, V>> {
+        syncResults: Collection<SortingTreeSynchronizer.SyncResult<K, V>>
+    ): List<SortingTreeSynchronizer.SyncResult<K, V>> {
         if (syncResults.isEmpty()) return emptyList()
 
         val sourceNodeMap = sourceTree.flattenTree().associateBy { it.key }
@@ -138,27 +142,27 @@ class DefaultSortingTreeSynchronizer<K, V>(
         }
 
         val nodeMapByKey = mutableMapOf<K, SortingTreeNode<K, V>>()
-        val processedResults = mutableListOf<SyncResult<K, V>>()
+        val processedResults = mutableListOf<SortingTreeSynchronizer.SyncResult<K, V>>()
 
         val differencesByType = syncResults.groupBy { it.syncType }
 
         // 1. 处理添加
-        differencesByType[SyncType.ADD]?.forEach { result ->
+        differencesByType[SortingTreeSynchronizer.SyncType.ADD]?.forEach { result ->
             processAddNode(result.node, sourceTree, targetTree, nodeMapByKey).also { processedResults.add(it) }
         }
 
         // 2. 处理更新
-        differencesByType[SyncType.UPDATE]?.forEach { result ->
+        differencesByType[SortingTreeSynchronizer.SyncType.UPDATE]?.forEach { result ->
             processUpdateNode(result.node, sourceTree, targetTree, nodeMapByKey).also { processedResults.add(it) }
         }
 
         // 3. 处理删除
-        differencesByType[SyncType.DELETE]?.forEach { result ->
+        differencesByType[SortingTreeSynchronizer.SyncType.DELETE]?.forEach { result ->
             processDeleteNode(result.node, targetTree).also { processedResults.add(it) }
         }
 
         // 4. 处理相同节点（仅用于填充映射，以便其他操作可以找到它们）
-        differencesByType[SyncType.SAME]?.forEach { result ->
+        differencesByType[SortingTreeSynchronizer.SyncType.SAME]?.forEach { result ->
             nodeMapByKey[result.node.key] = result.node
             processedResults.add(result)
         }
@@ -174,11 +178,11 @@ class DefaultSortingTreeSynchronizer<K, V>(
         sourceTree: SortingMultipleTree<K, V>,
         targetTree: SortingMultipleTree<K, V>,
         nodeMapByKey: MutableMap<K, SortingTreeNode<K, V>>
-    ): SyncResult<K, V> {
+    ): SortingTreeSynchronizer.SyncResult<K, V> {
         // 如果节点已存在（可能由其他操作的父节点递归添加），则直接返回
         if (targetTree.findNodeByKey(node.key) != null) {
             val existingNode = targetTree.findNodeByKey(node.key)!!
-            return SyncResult(existingNode, SyncType.ADD, true)
+            return SortingTreeSynchronizer.SyncResult(existingNode, SortingTreeSynchronizer.SyncType.ADD, true)
         }
 
         // 确保父节点存在
@@ -196,7 +200,7 @@ class DefaultSortingTreeSynchronizer<K, V>(
         }
 
         nodeMapByKey[addedNode.key] = addedNode
-        return SyncResult(addedNode, SyncType.ADD, true)
+        return SortingTreeSynchronizer.SyncResult(addedNode, SortingTreeSynchronizer.SyncType.ADD, true)
     }
 
     /**
@@ -207,9 +211,9 @@ class DefaultSortingTreeSynchronizer<K, V>(
         sourceTree: SortingMultipleTree<K, V>,
         targetTree: SortingMultipleTree<K, V>,
         nodeMapByKey: MutableMap<K, SortingTreeNode<K, V>>
-    ): SyncResult<K, V> {
+    ): SortingTreeSynchronizer.SyncResult<K, V> {
         val targetNode = targetTree.findNodeByKey(sourceNode.key)
-            ?: return SyncResult(sourceNode, SyncType.UPDATE, false)
+            ?: return SortingTreeSynchronizer.SyncResult(sourceNode, SortingTreeSynchronizer.SyncType.UPDATE, false)
 
         val sourceSortIndex = getSortIndex(sourceNode.sort, sourceTree.sortBase)
         val targetSortIndex = getSortIndex(targetNode.sort, targetTree.sortBase)
@@ -219,7 +223,7 @@ class DefaultSortingTreeSynchronizer<K, V>(
         val dataChanged = !dataComparator(targetNode.data, sourceNode.data)
 
         if (!parentChanged && !sortChanged && !dataChanged) {
-            return SyncResult(targetNode, SyncType.UPDATE, false)
+            return SortingTreeSynchronizer.SyncResult(targetNode, SortingTreeSynchronizer.SyncType.UPDATE, false)
         }
 
         var finalNode = targetNode
@@ -252,7 +256,7 @@ class DefaultSortingTreeSynchronizer<K, V>(
 
         nodeMapByKey[finalNode.key] = finalNode
 
-        return SyncResult(finalNode, SyncType.UPDATE, modified)
+        return SortingTreeSynchronizer.SyncResult(finalNode, SortingTreeSynchronizer.SyncType.UPDATE, modified)
     }
 
     /**
@@ -261,9 +265,9 @@ class DefaultSortingTreeSynchronizer<K, V>(
     private fun processDeleteNode(
         node: SortingTreeNode<K, V>,
         targetTree: SortingMultipleTree<K, V>
-    ): SyncResult<K, V> {
+    ): SortingTreeSynchronizer.SyncResult<K, V> {
         val success = targetTree.removeNode(node.key)
-        return SyncResult(node, SyncType.DELETE, success)
+        return SortingTreeSynchronizer.SyncResult(node, SortingTreeSynchronizer.SyncType.DELETE, success)
     }
 
     /**

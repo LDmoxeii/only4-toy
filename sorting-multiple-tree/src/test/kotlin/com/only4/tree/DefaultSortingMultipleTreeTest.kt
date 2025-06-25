@@ -1,4 +1,4 @@
-package com.only4.algorithm.structure.def
+package com.only4.tree
 
 import org.junit.jupiter.api.*
 

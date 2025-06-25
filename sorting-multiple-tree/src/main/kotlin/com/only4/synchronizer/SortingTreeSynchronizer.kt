@@ -1,4 +1,7 @@
-package com.only4
+package com.only4.synchronizer
+
+import com.only4.tree.SortingMultipleTree
+import com.only4.tree.SortingTreeNode
 
 /**
  * 有序多叉树同步器接口

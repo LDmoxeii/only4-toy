@@ -1,8 +1,7 @@
-package com.only4.algorithm.structure.def
+package com.only4.synchronizer
 
-import com.only4.algorithm.structure.SortingTreeSynchronizer
+import com.only4.tree.DefaultSortingMultipleTree
 import org.junit.jupiter.api.*
-import org.junit.jupiter.api.Assertions.*
 
 /**
  * DefaultSortingTreeSynchronizer的单元测试类
@@ -34,7 +33,7 @@ class DefaultSortingTreeSynchronizerTest {
         fun `空树差异计算`() {
             // 两棵空树应该没有差异
             val differences = synchronizer.calculateDifferences(sourceTree, targetTree)
-            assertTrue(differences.isEmpty())
+            Assertions.assertTrue(differences.isEmpty())
         }
 
         @Test
@@ -47,8 +46,8 @@ class DefaultSortingTreeSynchronizerTest {
             val differences = synchronizer.calculateDifferences(sourceTree, targetTree)
 
             // 应该有两个需要添加的节点
-            assertEquals(2, differences.size)
-            assertTrue(differences.all { it.syncType == SortingTreeSynchronizer.SyncType.ADD })
+            Assertions.assertEquals(2, differences.size)
+            Assertions.assertTrue(differences.all { it.syncType == SortingTreeSynchronizer.SyncType.ADD })
         }
 
         @Test
@@ -61,8 +60,8 @@ class DefaultSortingTreeSynchronizerTest {
             val differences = synchronizer.calculateDifferences(sourceTree, targetTree)
 
             // 应该有两个需要删除的节点
-            assertEquals(2, differences.size)
-            assertTrue(differences.all { it.syncType == SortingTreeSynchronizer.SyncType.DELETE })
+            Assertions.assertEquals(2, differences.size)
+            Assertions.assertTrue(differences.all { it.syncType == SortingTreeSynchronizer.SyncType.DELETE })
         }
 
         @Test
@@ -78,8 +77,8 @@ class DefaultSortingTreeSynchronizerTest {
             val differences = synchronizer.calculateDifferences(sourceTree, targetTree)
 
             // 应该有两个需要更新的节点
-            assertEquals(2, differences.size)
-            assertTrue(differences.all { it.syncType == SortingTreeSynchronizer.SyncType.UPDATE })
+            Assertions.assertEquals(2, differences.size)
+            Assertions.assertTrue(differences.all { it.syncType == SortingTreeSynchronizer.SyncType.UPDATE })
         }
 
         @Test
@@ -94,12 +93,12 @@ class DefaultSortingTreeSynchronizerTest {
             targetTree.addNode("child1", "root2", "子节点")
 
             val differences = synchronizer.calculateDifferences(sourceTree, targetTree)
-            assertEquals(3, differences.size)
+            Assertions.assertEquals(3, differences.size)
 
             val childDiff = differences.find { it.node.key == "child1" }
-            assertNotNull(childDiff)
+            Assertions.assertNotNull(childDiff)
             // 位置不同也被认为是更新
-            assertEquals(SortingTreeSynchronizer.SyncType.UPDATE, childDiff!!.syncType)
+            Assertions.assertEquals(SortingTreeSynchronizer.SyncType.UPDATE, childDiff!!.syncType)
         }
 
         @Test
@@ -115,8 +114,8 @@ class DefaultSortingTreeSynchronizerTest {
             val differences = synchronizer.calculateDifferences(sourceTree, targetTree)
 
             // 应该有两个相同的节点
-            assertEquals(2, differences.size)
-            assertTrue(differences.all { it.syncType == SortingTreeSynchronizer.SyncType.SAME })
+            Assertions.assertEquals(2, differences.size)
+            Assertions.assertTrue(differences.all { it.syncType == SortingTreeSynchronizer.SyncType.SAME })
         }
 
         @Test
@@ -135,17 +134,17 @@ class DefaultSortingTreeSynchronizerTest {
             val differences = synchronizer.calculateDifferences(sourceTree, targetTree)
 
             // 验证差异数量
-            assertEquals(4, differences.size)
-            assertEquals(
+            Assertions.assertEquals(4, differences.size)
+            Assertions.assertEquals(
                 1,
                 differences.count { it.syncType == SortingTreeSynchronizer.SyncType.SAME && it.node.key == "root1" })
-            assertEquals(
+            Assertions.assertEquals(
                 1,
                 differences.count { it.syncType == SortingTreeSynchronizer.SyncType.ADD && it.node.key == "child2" })
-            assertEquals(
+            Assertions.assertEquals(
                 1,
                 differences.count { it.syncType == SortingTreeSynchronizer.SyncType.UPDATE && it.node.key == "child1" })
-            assertEquals(
+            Assertions.assertEquals(
                 1,
                 differences.count { it.syncType == SortingTreeSynchronizer.SyncType.DELETE && it.node.key == "child3" })
         }
@@ -166,8 +165,8 @@ class DefaultSortingTreeSynchronizerTest {
             synchronizer.synchronizeTrees(sourceTree, targetTree)
 
             // 验证目标树与源树结构一致
-            assertEquals(sourceTree.flattenTree().size, targetTree.flattenTree().size)
-            assertNotNull(targetTree.findNodeByKey("grandChild1"))
+            Assertions.assertEquals(sourceTree.flattenTree().size, targetTree.flattenTree().size)
+            Assertions.assertNotNull(targetTree.findNodeByKey("grandChild1"))
         }
 
         @Test
@@ -180,7 +179,7 @@ class DefaultSortingTreeSynchronizerTest {
             synchronizer.synchronizeTrees(sourceTree, targetTree)
 
             // 目标树应该变为空
-            assertTrue(targetTree.flattenTree().isEmpty())
+            Assertions.assertTrue(targetTree.flattenTree().isEmpty())
         }
 
         @Test
@@ -193,7 +192,7 @@ class DefaultSortingTreeSynchronizerTest {
             synchronizer.synchronizeTrees(sourceTree, targetTree)
 
             // 验证数据已更新
-            assertEquals("数据v1", targetTree.findNodeByKey("root1")?.data)
+            Assertions.assertEquals("数据v1", targetTree.findNodeByKey("root1")?.data)
         }
 
         @Test
@@ -212,10 +211,10 @@ class DefaultSortingTreeSynchronizerTest {
 
             // 验证目标树中的节点已移动
             val targetChild = targetTree.findNodeByKey("child1")
-            assertNotNull(targetChild)
-            assertEquals("root2", targetChild!!.parentKey)
-            assertTrue(targetTree.findNodeByKey("root2")!!.children.contains(targetChild))
-            assertFalse(targetTree.findNodeByKey("root1")!!.children.contains(targetChild))
+            Assertions.assertNotNull(targetChild)
+            Assertions.assertEquals("root2", targetChild!!.parentKey)
+            Assertions.assertTrue(targetTree.findNodeByKey("root2")!!.children.contains(targetChild))
+            Assertions.assertFalse(targetTree.findNodeByKey("root1")!!.children.contains(targetChild))
         }
 
         @Test
@@ -228,7 +227,7 @@ class DefaultSortingTreeSynchronizerTest {
 
             // 验证初始顺序
             var parent = targetTree.findNodeByKey("root1")!!
-            assertEquals("child1", parent.children.first().key)
+            Assertions.assertEquals("child1", parent.children.first().key)
 
             // 修改源树排序并再次同步
             sourceTree.findNodeByKey("child1")!!.sort = 3L // child1排到child2后面
@@ -236,8 +235,8 @@ class DefaultSortingTreeSynchronizerTest {
 
             // 验证目标树顺序已更新
             parent = targetTree.findNodeByKey("root1")!!
-            assertEquals("child2", parent.children.first().key)
-            assertEquals("child1", parent.children.last().key)
+            Assertions.assertEquals("child2", parent.children.first().key)
+            Assertions.assertEquals("child1", parent.children.last().key)
         }
 
         @Test
@@ -255,10 +254,10 @@ class DefaultSortingTreeSynchronizerTest {
 
             // 验证子树已移动
             val targetSubTreeRoot = targetTree.findNodeByKey("subTreeRoot")
-            assertEquals("root2", targetSubTreeRoot?.parentKey)
-            assertNotNull(targetTree.findNodeByKey("subTreeChild"))
-            assertEquals("subTreeRoot", targetTree.findNodeByKey("subTreeChild")?.parentKey)
-            assertEquals(1, targetSubTreeRoot!!.children.size)
+            Assertions.assertEquals("root2", targetSubTreeRoot?.parentKey)
+            Assertions.assertNotNull(targetTree.findNodeByKey("subTreeChild"))
+            Assertions.assertEquals("subTreeRoot", targetTree.findNodeByKey("subTreeChild")?.parentKey)
+            Assertions.assertEquals(1, targetSubTreeRoot!!.children.size)
         }
 
         @Test
@@ -276,11 +275,11 @@ class DefaultSortingTreeSynchronizerTest {
             synchronizer.synchronizeTrees(sourceTree, targetTree)
 
             // 验证目标树
-            assertNull(targetTree.findNodeByKey("parent"))
+            Assertions.assertNull(targetTree.findNodeByKey("parent"))
             val targetChild = targetTree.findNodeByKey("child")
-            assertNotNull(targetChild)
-            assertEquals("root", targetChild?.parentKey)
-            assertTrue(targetTree.findNodeByKey("root")!!.children.contains(targetChild))
+            Assertions.assertNotNull(targetChild)
+            Assertions.assertEquals("root", targetChild?.parentKey)
+            Assertions.assertTrue(targetTree.findNodeByKey("root")!!.children.contains(targetChild))
         }
 
         @Test
@@ -291,16 +290,16 @@ class DefaultSortingTreeSynchronizerTest {
             sourceTree.addNode("childOfDeleted", "toBeDeleted", "待删除的子节点")
             synchronizer.synchronizeTrees(sourceTree, targetTree)
 
-            assertNotNull(targetTree.findNodeByKey("toBeDeleted"))
-            assertNotNull(targetTree.findNodeByKey("childOfDeleted"))
+            Assertions.assertNotNull(targetTree.findNodeByKey("toBeDeleted"))
+            Assertions.assertNotNull(targetTree.findNodeByKey("childOfDeleted"))
 
             // 删除节点
             sourceTree.removeNode("toBeDeleted")
             synchronizer.synchronizeTrees(sourceTree, targetTree)
 
             // 验证节点及其子节点都已被删除
-            assertNull(targetTree.findNodeByKey("toBeDeleted"))
-            assertNull(targetTree.findNodeByKey("childOfDeleted"))
+            Assertions.assertNull(targetTree.findNodeByKey("toBeDeleted"))
+            Assertions.assertNull(targetTree.findNodeByKey("childOfDeleted"))
         }
 
         @Test
@@ -315,10 +314,10 @@ class DefaultSortingTreeSynchronizerTest {
             synchronizer.synchronizeTrees(sourceTree, targetTree, listOf("child1", "grandChild1"))
 
             // 验证只有指定的节点及其父节点被同步
-            assertNotNull(targetTree.findNodeByKey("root1"))
-            assertNotNull(targetTree.findNodeByKey("child1"))
-            assertNotNull(targetTree.findNodeByKey("grandChild1"))
-            assertNull(targetTree.findNodeByKey("child2")) // 未指定同步，不应存在
+            Assertions.assertNotNull(targetTree.findNodeByKey("root1"))
+            Assertions.assertNotNull(targetTree.findNodeByKey("child1"))
+            Assertions.assertNotNull(targetTree.findNodeByKey("grandChild1"))
+            Assertions.assertNull(targetTree.findNodeByKey("child2")) // 未指定同步，不应存在
         }
     }
 
@@ -343,9 +342,9 @@ class DefaultSortingTreeSynchronizerTest {
 
             // 验证子节点已移动到正确的父节点下
             val syncedChild = targetTree.findNodeByKey("child1")
-            assertEquals("root1", syncedChild?.parentKey)
-            assertTrue(targetTree.findNodeByKey("root1")!!.children.contains(syncedChild))
-            assertFalse(targetTree.findNodeByKey("root2")!!.children.contains(syncedChild!!))
+            Assertions.assertEquals("root1", syncedChild?.parentKey)
+            Assertions.assertTrue(targetTree.findNodeByKey("root1")!!.children.contains(syncedChild))
+            Assertions.assertFalse(targetTree.findNodeByKey("root2")!!.children.contains(syncedChild!!))
         }
 
         @Test
@@ -359,9 +358,9 @@ class DefaultSortingTreeSynchronizerTest {
             synchronizer.synchronizeTrees(sourceTree, targetTree, listOf("leaf1"))
 
             // 验证所有必要的父节点都被同步
-            assertNotNull(targetTree.findNodeByKey("root1"))
-            assertNotNull(targetTree.findNodeByKey("mid1"))
-            assertNotNull(targetTree.findNodeByKey("leaf1"))
+            Assertions.assertNotNull(targetTree.findNodeByKey("root1"))
+            Assertions.assertNotNull(targetTree.findNodeByKey("mid1"))
+            Assertions.assertNotNull(targetTree.findNodeByKey("leaf1"))
         }
 
         @Test
@@ -379,13 +378,13 @@ class DefaultSortingTreeSynchronizerTest {
 
             // 验证目标树中节点的排序值被正确转换
             val targetRoot = targetTreeDifferentBase.findNodeByKey("root1")
-            assertNotNull(targetRoot)
-            assertEquals(1L, targetRoot!!.sort)
+            Assertions.assertNotNull(targetRoot)
+            Assertions.assertEquals(1L, targetRoot!!.sort)
 
             val targetChild = targetTreeDifferentBase.findNodeByKey("child1")
-            assertNotNull(targetChild)
+            Assertions.assertNotNull(targetChild)
             // 子节点的排序值在目标树中应基于目标树的基数重新计算，但其相对顺序（sort）应保持不变
-            assertEquals(1L, targetChild!!.sort % targetTreeDifferentBase.sortBase)
+            Assertions.assertEquals(1L, targetChild!!.sort % targetTreeDifferentBase.sortBase)
         }
 
         @Test
@@ -403,7 +402,7 @@ class DefaultSortingTreeSynchronizerTest {
             // 初始结构
             sourceTree.addRootNode("node1", "节点v1")
             synchronizer.synchronizeTrees(sourceTree, targetTree)
-            assertEquals("节点v1", targetTree.findNodeByKey("node1")?.data)
+            Assertions.assertEquals("节点v1", targetTree.findNodeByKey("node1")?.data)
 
             // 在源树中"替换"节点
             sourceTree.removeNode("node1")
@@ -412,9 +411,9 @@ class DefaultSortingTreeSynchronizerTest {
 
             // 验证目标树
             val node = targetTree.findNodeByKey("node1")
-            assertNotNull(node)
-            assertEquals("节点v2", node?.data)
-            assertTrue(node!!.children.isEmpty()) // 确保是新节点，没有旧的子节点
+            Assertions.assertNotNull(node)
+            Assertions.assertEquals("节点v2", node?.data)
+            Assertions.assertTrue(node!!.children.isEmpty()) // 确保是新节点，没有旧的子节点
         }
     }
 }
