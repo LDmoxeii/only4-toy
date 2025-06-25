@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.only4.mapper.ApiResourceMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.only4.entity.ApiResource">
+        <id column="id" property="key"/>
+        <result column="parent_id" property="parentKey"/>
+        <result column="node_path" property="nodePath"/>
+        <result column="sort" property="sort"/>
+        <result column="title" property="title"/>
+        <result column="en_title" property="enTitle"/>
+        <result column="show_status" property="showStatus"/>
+        <result column="active_status" property="activeStatus"/>
+    </resultMap>
+
+    <!-- 根据父ID查询子资源 -->
+    <select id="findByParentId" resultMap="BaseResultMap">
+        SELECT *
+        FROM api_resource_${tableSelector}
+        WHERE parent_id = #{parentId}
+        ORDER BY sort
+    </select>
+
+    <!-- 查找所有根节点（没有父节点的节点） -->
+    <select id="findRoots" resultMap="BaseResultMap">
+        SELECT *
+        FROM api_resource_${tableSelector}
+        WHERE parent_id IS NULL
+           OR parent_id = ''
+        ORDER BY sort
+    </select>
+
+    <!-- 根据路径查询 -->
+    <select id="findByPathStartsWith" resultMap="BaseResultMap">
+        SELECT *
+        FROM api_resource_${tableSelector}
+        WHERE node_path LIKE CONCAT(#{path}, '%')
+        ORDER BY sort
+    </select>
+
+    <!-- 查询指定表中的所有记录 -->
+    <select id="findAllFromTable" resultMap="BaseResultMap">
+        SELECT *
+        FROM api_resource_${tableSelector}
+        ORDER BY sort
+    </select>
+
+</mapper>

@@ -7,8 +7,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.only4.tree.AbstractSortingMultipleTree
 import com.only4.tree.SortingTreeNode
 
-@TableName(value = "ui_resource_1", autoResultMap = true)
-data class UiResource(
+@TableName(value = "api_resource_1", autoResultMap = true)
+data class ApiResource(
     @TableId
     override val key: String,
 
@@ -20,19 +20,19 @@ data class UiResource(
 
     @TableField
     override var sort: Long,
-    
+
     @TableField(exist = false)
-    override var data: UiResourceInfo = UiResourceInfo(),
+    override var data: ApiResourceInfo = ApiResourceInfo(),
 
     @TableField(exist = false)
     @JsonIgnore
-    override val children: MutableList<SortingTreeNode<String, UiResourceInfo>> = mutableListOf(),
+    override val children: MutableList<SortingTreeNode<String, ApiResourceInfo>> = mutableListOf(),
 
     // 表名选择器，默认为1，可以设置为1或2
     @TableField(exist = false)
     @JsonIgnore
     var tableSelector: Int = 1
-) : SortingTreeNode<String, UiResource.UiResourceInfo> {
+) : SortingTreeNode<String, ApiResource.ApiResourceInfo> {
 
     // 无参构造函数，用于MyBatis
     constructor() : this(
@@ -40,7 +40,7 @@ data class UiResource(
         parentKey = "",
         nodePath = "",
         sort = 0,
-        data = UiResourceInfo(),
+        data = ApiResourceInfo(),
         children = mutableListOf(),
         tableSelector = 1
     )
@@ -60,7 +60,7 @@ data class UiResource(
         parentKey = parentId,
         nodePath = nodePath,
         sort = sort,
-        data = UiResourceInfo(
+        data = ApiResourceInfo(
             title = title,
             enTitle = enTitle,
             showStatus = showStatus,
@@ -106,7 +106,7 @@ data class UiResource(
             data.activeStatus = value
         }
 
-    data class UiResourceInfo(
+    data class ApiResourceInfo(
         var title: String = "",
         var enTitle: String = "",
         var showStatus: Boolean = true,
@@ -114,7 +114,7 @@ data class UiResource(
     )
 }
 
-class UiResourceTree : AbstractSortingMultipleTree<String, UiResource.UiResourceInfo>("") {
+class ApiResourceTree : AbstractSortingMultipleTree<String, ApiResource.ApiResourceInfo>("") {
     override fun calculateNextSort(parentKey: String): Long {
         val children = parentChildMap[parentKey] ?: return 1L
 
@@ -198,9 +198,9 @@ class UiResourceTree : AbstractSortingMultipleTree<String, UiResource.UiResource
     override fun addNode(
         key: String,
         parentKey: String,
-        data: UiResource.UiResourceInfo,
+        data: ApiResource.ApiResourceInfo,
         sort: Long?
-    ): SortingTreeNode<String, UiResource.UiResourceInfo> {
+    ): SortingTreeNode<String, ApiResource.ApiResourceInfo> {
         // 检查键是否已存在
         require(!nodeMap.containsKey(key)) { "Node with key $key already exists" }
 
@@ -217,7 +217,7 @@ class UiResourceTree : AbstractSortingMultipleTree<String, UiResource.UiResource
         val nodePath = generateNodePath(key, parentKey)
 
         // 创建节点
-        val node = UiResource(key, parentKey, nodePath, actualSort, data)
+        val node = ApiResource(key, parentKey, nodePath, actualSort, data)
 
         // 检查是否需要解决排序冲突
         handleSortConflict(parentKey, actualSort)
@@ -234,7 +234,7 @@ class UiResourceTree : AbstractSortingMultipleTree<String, UiResource.UiResource
         /**
          * 递归删除节点及其子节点
          */
-        fun recursiveRemove(node: SortingTreeNode<String, UiResource.UiResourceInfo>) {
+        fun recursiveRemove(node: SortingTreeNode<String, ApiResource.ApiResourceInfo>) {
             // 首先递归删除所有子节点
             val childrenCopy = node.children.toList()
             for (child in childrenCopy) {
@@ -276,14 +276,14 @@ class UiResourceTree : AbstractSortingMultipleTree<String, UiResource.UiResource
     }
 
     override fun moveNode(
-        node: SortingTreeNode<String, UiResource.UiResourceInfo>,
+        node: SortingTreeNode<String, ApiResource.ApiResourceInfo>,
         newParentKey: String,
         newSort: Long?
-    ): SortingTreeNode<String, UiResource.UiResourceInfo> {
+    ): SortingTreeNode<String, ApiResource.ApiResourceInfo> {
         /**
          * 将节点从其父节点分离。
          */
-        fun detachFromParent(node: SortingTreeNode<String, UiResource.UiResourceInfo>) {
+        fun detachFromParent(node: SortingTreeNode<String, ApiResource.ApiResourceInfo>) {
             if (node.parentKey != dummyKey) {
                 findNodeByKey(node.parentKey)?.children?.remove(node)
             }
@@ -296,7 +296,7 @@ class UiResourceTree : AbstractSortingMultipleTree<String, UiResource.UiResource
         /**
          * 将节点附加到其父节点。
          */
-        fun attachToParent(node: SortingTreeNode<String, UiResource.UiResourceInfo>) {
+        fun attachToParent(node: SortingTreeNode<String, ApiResource.ApiResourceInfo>) {
             if (node.parentKey != dummyKey) {
                 findNodeByKey(node.parentKey)?.children?.add(node)
             }
@@ -306,7 +306,7 @@ class UiResourceTree : AbstractSortingMultipleTree<String, UiResource.UiResource
         /**
          * 递归更新所有子孙节点排序值。
          */
-        fun updateDescendantsRecursively(parentNode: SortingTreeNode<String, UiResource.UiResourceInfo>) {
+        fun updateDescendantsRecursively(parentNode: SortingTreeNode<String, ApiResource.ApiResourceInfo>) {
             getChildren(parentNode.key).forEach { child ->
                 val sortIndex = getSortIndex(child.sort)
                 child.sort = parentNode.sort * sortBase + sortIndex
@@ -384,8 +384,8 @@ class UiResourceTree : AbstractSortingMultipleTree<String, UiResource.UiResource
     override fun moveNodes(
         keys: Collection<String>,
         newParentKey: String
-    ): List<SortingTreeNode<String, UiResource.UiResourceInfo>> {
-        val result = mutableListOf<SortingTreeNode<String, UiResource.UiResourceInfo>>()
+    ): List<SortingTreeNode<String, ApiResource.ApiResourceInfo>> {
+        val result = mutableListOf<SortingTreeNode<String, ApiResource.ApiResourceInfo>>()
 
         // 先检查所有节点是否存在
         val nodesToMove = keys.mapNotNull { findNodeByKey(it) }
@@ -413,14 +413,14 @@ class UiResourceTree : AbstractSortingMultipleTree<String, UiResource.UiResource
         return result
     }
 
-    override fun flattenTree(): List<SortingTreeNode<String, UiResource.UiResourceInfo>> {
+    override fun flattenTree(): List<SortingTreeNode<String, ApiResource.ApiResourceInfo>> {
         return nodeMap.values.sortedBy { it.sort }
     }
 
     override fun updateNodeData(
         key: String,
-        update: (UiResource.UiResourceInfo) -> UiResource.UiResourceInfo
-    ): SortingTreeNode<String, UiResource.UiResourceInfo>? {
+        update: (ApiResource.ApiResourceInfo) -> ApiResource.ApiResourceInfo
+    ): SortingTreeNode<String, ApiResource.ApiResourceInfo>? {
         // 查找节点
         val node = findNodeByKey(key) ?: return null
 
@@ -433,8 +433,8 @@ class UiResourceTree : AbstractSortingMultipleTree<String, UiResource.UiResource
     }
 
     companion object {
-        fun buildFromResources(resources: Collection<UiResource>): UiResourceTree {
-            val tree = UiResourceTree()
+        fun buildFromResources(resources: Collection<ApiResource>): ApiResourceTree {
+            val tree = ApiResourceTree()
             resources.forEach { resource ->
                 tree.addNode(
                     key = resource.key,
