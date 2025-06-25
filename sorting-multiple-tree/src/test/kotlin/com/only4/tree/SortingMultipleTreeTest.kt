@@ -7,34 +7,34 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * SortingMultipleTree的树构建方法单元测试
+ * SortingMultipleNode的树构建方法单元测试
  */
-class SortingMultipleTreeTest {
+class SortingMultipleNodeTest {
 
     @Nested
     @DisplayName("树构建方法测试")
-    inner class TreeBuildingTests {
+    inner class NodeBuildingTests {
 
         @Test
-        fun `buildTree 空节点列表测试`() {
+        fun `buildNode 空节点列表测试`() {
             val nodeList = emptyList<SortingTreeNode<String, String>>()
-            val result = SortingMultipleTree.buildTree(nodeList) { true }
+            val result = SortingTreeNode.buildTree(nodeList) { true }
             assertTrue(result.isEmpty())
         }
 
         @Test
         fun `buildTree 基本功能测试`() {
             // 创建测试节点
-            val root1 = DefaultSortingTreeNode("root1", "ROOT", 1L, "root1", "根节点1")
-            val root2 = DefaultSortingTreeNode("root2", "ROOT", 2L, "root2", "根节点2")
-            val child1 = DefaultSortingTreeNode("child1", "root1", 101L, "root1/child1", "子节点1")
-            val child2 = DefaultSortingTreeNode("child2", "root1", 102L, "root1/child2", "子节点2")
-            val grandChild = DefaultSortingTreeNode("grandChild", "child1", 10101L, "root1/child1/grandChild", "孙节点")
+            val root1 = DefaultSortingTreeNode("root1", "ROOT", 1L, "根节点1")
+            val root2 = DefaultSortingTreeNode("root2", "ROOT", 2L, "根节点2")
+            val child1 = DefaultSortingTreeNode("child1", "root1", 101L, "子节点1")
+            val child2 = DefaultSortingTreeNode("child2", "root1", 102L, "子节点2")
+            val grandChild = DefaultSortingTreeNode("grandChild", "child1", 10101L, "孙节点")
 
             val nodeList = listOf(root1, root2, child1, child2, grandChild)
 
             // 测试构建树
-            val result = SortingMultipleTree.buildTree(nodeList) { node -> node.parentKey == "ROOT" }
+            val result = SortingTreeNode.buildTree(nodeList) { node -> node.parentKey == "ROOT" }
 
             // 验证结果
             assertEquals(2, result.size)
@@ -56,15 +56,15 @@ class SortingMultipleTreeTest {
         @Test
         fun `buildTree 排序功能测试`() {
             // 创建测试节点，故意打乱顺序
-            val root1 = DefaultSortingTreeNode("root1", "ROOT", 2L, "root1", "根节点1") // 排序值较大
-            val root2 = DefaultSortingTreeNode("root2", "ROOT", 1L, "root2", "根节点2") // 排序值较小
-            val child1 = DefaultSortingTreeNode("child1", "root1", 102L, "root1/child1", "子节点1") // 排序值较大
-            val child2 = DefaultSortingTreeNode("child2", "root1", 101L, "root1/child2", "子节点2") // 排序值较小
+            val root1 = DefaultSortingTreeNode("root1", "ROOT", 2L, "根节点1") // 排序值较大
+            val root2 = DefaultSortingTreeNode("root2", "ROOT", 1L, "根节点2") // 排序值较小
+            val child1 = DefaultSortingTreeNode("child1", "root1", 102L, "子节点1") // 排序值较大
+            val child2 = DefaultSortingTreeNode("child2", "root1", 101L, "子节点2") // 排序值较小
 
             val nodeList = listOf(root1, root2, child1, child2)
 
             // 测试构建树
-            val result = SortingMultipleTree.buildTree(nodeList) { node -> node.parentKey == "ROOT" }
+            val result = SortingTreeNode.buildTree(nodeList) { node -> node.parentKey == "ROOT" }
 
             // 验证根节点排序
             assertEquals(2, result.size)
@@ -81,13 +81,13 @@ class SortingMultipleTreeTest {
         @Test
         fun `buildTreeByRootKey 测试`() {
             // 创建测试节点
-            val root = DefaultSortingTreeNode("root", "ROOT_KEY", 1L, "root", "根节点")
-            val child = DefaultSortingTreeNode("child", "root", 101L, "root/child", "子节点")
+            val root = DefaultSortingTreeNode("root", "ROOT_KEY", 1L, "根节点")
+            val child = DefaultSortingTreeNode("child", "root", 101L, "子节点")
 
             val nodeList = listOf(root, child)
 
             // 使用buildTreeByRootKey方法
-            val result = SortingMultipleTree.buildTreeByRootKey(nodeList, "ROOT_KEY")
+            val result = SortingTreeNode.buildTreeByRootKey(nodeList, "ROOT_KEY")
 
             // 验证结果
             assertEquals(1, result.size)
@@ -111,7 +111,7 @@ class SortingMultipleTreeTest {
             )
 
             // 使用buildTreeFromList方法
-            val result = SortingMultipleTree.buildTreeFromList(
+            val result = SortingTreeNode.buildTreeFromList(
                 dataList = items,
                 keyExtractor = { it.id },
                 parentKeyExtractor = { it.parentId },
@@ -151,7 +151,7 @@ class SortingMultipleTreeTest {
             )
 
             // 使用buildTreeFromList方法
-            val result = SortingMultipleTree.buildTreeFromList(
+            val result = SortingTreeNode.buildTreeFromList(
                 dataList = items,
                 keyExtractor = { it.id },
                 parentKeyExtractor = { it.parentId },
@@ -178,7 +178,7 @@ class SortingMultipleTreeTest {
             )
 
             // 使用buildTreeFromListByRootKey方法
-            val result = SortingMultipleTree.buildTreeFromListByRootKey(
+            val result = SortingTreeNode.buildTreeFromListByRootKey(
                 dataList = items,
                 keyExtractor = { it.id },
                 parentKeyExtractor = { it.parentId },
@@ -209,7 +209,7 @@ class SortingMultipleTreeTest {
             )
 
             // 使用buildTreeFromList方法
-            val result = SortingMultipleTree.buildTreeFromList(
+            val result = SortingTreeNode.buildTreeFromList(
                 dataList = items,
                 keyExtractor = { it.id },
                 parentKeyExtractor = { it.parentId },
@@ -232,38 +232,6 @@ class SortingMultipleTreeTest {
             assertEquals(2, grandChildren.size)
             assertEquals(10101, grandChildren[0].sort) // 101 * 100 + 1
             assertEquals(10102, grandChildren[1].sort) // 101 * 100 + 2
-        }
-
-        @Test
-        fun `buildTreeFromList 节点路径构建测试`() {
-            // 测试数据类
-            data class TestItem(val id: String, val parentId: String, val name: String)
-
-            // 创建测试数据
-            val items = listOf(
-                TestItem("root", "ROOT", "根节点"),
-                TestItem("child", "root", "子节点"),
-                TestItem("grandChild", "child", "孙节点")
-            )
-
-            // 使用buildTreeFromList方法
-            val result = SortingMultipleTree.buildTreeFromList(
-                dataList = items,
-                keyExtractor = { it.id },
-                parentKeyExtractor = { it.parentId },
-                dataExtractor = { it.name },
-                isRoot = { it.parentId == "ROOT" }
-            )
-
-            // 验证节点路径
-            val root = result[0]
-            assertEquals("root", root.nodePath)
-
-            val child = root.children[0]
-            assertEquals("root/child", child.nodePath)
-
-            val grandChild = child.children[0]
-            assertEquals("root/child/grandChild", grandChild.nodePath)
         }
     }
 }

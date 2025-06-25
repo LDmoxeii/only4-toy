@@ -13,200 +13,17 @@ interface SortingTreeNode<K, V> {
     /** 父节点唯一键 */
     var parentKey: K
 
+    /** 节点路径 */
+    var nodePath: String
+
     /** 节点排序值 */
     var sort: Long
-
-    /** 节点路径，格式为 "parent.key/this.key" */
-    var nodePath: String
 
     /** 节点数据 */
     var data: V
 
     /** 子节点列表 */
     val children: MutableList<SortingTreeNode<K, V>>
-        get() = mutableListOf()
-}
-
-/**
- * 有序多叉树节点实现
- *
- * @param K 键类型
- * @param V 节点数据类型
- */
-data class DefaultSortingTreeNode<K, V>(
-    override val key: K,
-    override var parentKey: K,
-    override var sort: Long,
-    override var nodePath: String,
-    override var data: V,
-    override val children: MutableList<SortingTreeNode<K, V>> = mutableListOf()
-) : SortingTreeNode<K, V>
-
-/**
- * 有序多叉树实现接口
- * 后续将实现此接口
- */
-interface SortingMultipleTree<K, V> {
-    // 根节点的虚拟父键标识
-    val dummyKey: K
-
-    // 路径分隔符
-    val pathSeparator: String
-
-    // 节点排序基数
-    val sortBase: Long
-
-    /**
-     * 添加根节点（自动分配排序值）
-     *
-     * @param key 节点唯一键
-     * @param data 节点数据
-     * @return 添加的根节点
-     */
-    fun addRootNode(key: K, data: V): SortingTreeNode<K, V> = this.addNode(key, dummyKey, data)
-
-    /**
-     * 添加根节点（指定排序值）
-     *
-     * @param key 节点唯一键
-     * @param data 节点数据
-     * @param sort 指定的排序值
-     * @return 添加的根节点
-     */
-    fun addRootNode(key: K, data: V, sort: Long): SortingTreeNode<K, V> = this.addNode(key, dummyKey, data, sort)
-
-    /**
-     * 判断一个节点是否为根节点
-     *
-     * @param node 要检查的节点
-     * @return 如果是根节点返回true，否则返回false
-     */
-    fun isRoot(node: SortingTreeNode<K, V>): Boolean {
-        return node.parentKey == dummyKey
-    }
-
-    /**
-     * 添加节点（自动分配排序值）
-     *
-     * @param key 节点唯一键
-     * @param parentKey 父节点键
-     * @param data 节点数据
-     * @return 添加的节点
-     */
-    fun addNode(key: K, parentKey: K, data: V): SortingTreeNode<K, V>
-
-    /**
-     * 添加节点（指定排序值）
-     *
-     * @param key 节点唯一键
-     * @param parentKey 父节点键
-     * @param data 节点数据
-     * @param sort 指定的排序值
-     * @return 添加的节点
-     */
-    fun addNode(key: K, parentKey: K, data: V, sort: Long): SortingTreeNode<K, V>
-
-    /**
-     * 删除节点
-     *
-     * @param key 要删除的节点键
-     * @return 如果删除成功返回true，否则返回false
-     */
-    fun removeNode(key: K): Boolean
-
-    /**
-     * 移动节点到新的父节点下
-     *
-     * @param key 要移动的节点键
-     * @param newParentKey 新的父节点键
-     * @param newSort 可选的新排序值，如果为null则自动计算
-     * @return 移动后的节点，如果移动失败则返回null
-     */
-    fun moveNode(key: K, newParentKey: K, newSort: Long? = null): SortingTreeNode<K, V>?
-
-    /**
-     * 移动节点为根节点
-     *
-     * @param key 要移动的节点键
-     * @param newSort 可选的新排序值，如果为null则自动计算
-     * @return 移动后的节点，如果移动失败则返回null
-     */
-    fun moveNodeToRoot(key: K, newSort: Long? = null): SortingTreeNode<K, V>? {
-        return moveNode(key, dummyKey, newSort)
-    }
-
-    /**
-     * 移动节点到新的父节点下
-     *
-     * @param node 要移动的节点对象
-     * @param newParentKey 新的父节点键
-     * @param newSort 可选的新排序值，如果为null则自动计算
-     * @return 移动后的节点，如果移动失败则返回null
-     */
-    fun moveNode(node: SortingTreeNode<K, V>, newParentKey: K, newSort: Long? = null): SortingTreeNode<K, V>
-
-    /**
-     * 移动节点为根节点
-     */
-    fun moveNodeToRoot(node: SortingTreeNode<K, V>, newSort: Long? = null): SortingTreeNode<K, V> {
-        return moveNode(node, dummyKey, newSort)
-    }
-
-    /**
-     * 批量移动节点到新的父节点下
-     *
-     * @param keys 要移动的节点键集合
-     * @param newParentKey 新的父节点键
-     * @return 移动后的节点列表
-     */
-    fun moveNodes(keys: Collection<K>, newParentKey: K): List<SortingTreeNode<K, V>>
-
-    /**
-     * 通过节点路径移动节点
-     *
-     * @param nodePath 要移动的节点路径
-     * @param newParentPath 新的父节点路径
-     * @return 移动后的节点，如果移动失败则返回null
-     */
-    fun moveNodeByPath(nodePath: String, newParentPath: String): SortingTreeNode<K, V>
-
-    /**
-     * 根据键查找节点
-     *
-     * @param key 节点键
-     * @return 找到的节点，如果不存在则返回null
-     */
-    fun findNodeByKey(key: K): SortingTreeNode<K, V>?
-
-    /**
-     * 将树转换为扁平列表（按排序值排序）
-     *
-     * @return 扁平化的节点列表
-     */
-    fun flattenTree(): List<SortingTreeNode<K, V>>
-
-    /**
-     * 获取树的根节点列表
-     *
-     * @return 根节点列表
-     */
-    fun getRootNodes(): List<SortingTreeNode<K, V>>
-
-    /**
-     * 根据父节点键查找子节点列表
-     *
-     * @param parentKey 父节点键
-     * @return 子节点列表
-     */
-    fun getChildren(parentKey: K): List<SortingTreeNode<K, V>>
-
-    /**
-     * 根据节点路径查找所有子孙节点
-     *
-     * @param nodePath 节点路径
-     * @return 子孙节点列表
-     */
-    fun getDescendants(nodePath: String): List<SortingTreeNode<K, V>>
 
     companion object {
         /**
@@ -257,7 +74,7 @@ interface SortingMultipleTree<K, V> {
          */
         fun <K, V> buildTreeByRootKey(
             nodeList: Collection<SortingTreeNode<K, V>>,
-            rootKey: K?
+            rootKey: K
         ): List<SortingTreeNode<K, V>> {
             return buildTree(nodeList) { node -> node.parentKey == rootKey }
         }
@@ -277,9 +94,7 @@ interface SortingMultipleTree<K, V> {
             val childNodes = parentChildMap[parentNode.key] ?: return
 
             // 清除现有的子节点
-            if (parentNode is DefaultSortingTreeNode) {
-                parentNode.children.clear()
-            }
+            parentNode.children.clear()
 
             // 添加排序后的子节点
             val sortedChildren = childNodes.sortedBy { it.sort }
@@ -325,8 +140,7 @@ interface SortingMultipleTree<K, V> {
                     val key = keyExtractor(item)
                     val parentKey = parentKeyExtractor(item)
                     val data = dataExtractor(item)
-                    val nodePath = "$key"
-                    val node = DefaultSortingTreeNode(key, parentKey, sortCounter++, nodePath, data)
+                    val node = DefaultSortingTreeNode(key, parentKey, sortCounter++, data)
                     rootNodes.add(node)
                 } else {
                     childDataItems.add(item)
@@ -350,13 +164,12 @@ interface SortingMultipleTree<K, V> {
                     val key = keyExtractor(item)
                     val data = dataExtractor(item)
                     val parentNode = nodeMap[parentKey]!!
-                    val nodePath = "${parentNode.nodePath}/$key"
 
                     // 计算子节点排序值（父节点排序 * 100 + 子节点索引）
                     val childIndex = (parentNode.children.size + 1).toLong()
                     val sort = parentNode.sort * 100 + childIndex
 
-                    val node = DefaultSortingTreeNode(key, parentKey, sort, nodePath, data)
+                    val node = DefaultSortingTreeNode(key, parentKey, sort, data)
                     parentNode.children.add(node)
                     nodeMap[key] = node
                     processed.add(item)
@@ -411,6 +224,171 @@ interface SortingMultipleTree<K, V> {
 }
 
 /**
+ * 有序多叉树节点实现
+ *
+ * @param K 键类型
+ * @param V 节点数据类型
+ */
+data class DefaultSortingTreeNode<K, V>(
+    override val key: K,
+    override var parentKey: K,
+    override var sort: Long,
+    override var data: V,
+    override val children: MutableList<SortingTreeNode<K, V>> = mutableListOf(),
+    override var nodePath: String = ""
+) : SortingTreeNode<K, V>
+
+/**
+ * 有序多叉树实现接口
+ * 后续将实现此接口
+ */
+interface SortingMultipleTree<K, V> {
+    // 根节点的虚拟父键标识
+    val dummyKey: K
+
+    // 节点排序基数
+    val sortBase: Long
+
+    /**
+     * 添加根节点（自动分配排序值）
+     *
+     * @param key 节点唯一键
+     * @param data 节点数据
+     * @return 添加的根节点
+     */
+    fun addRootNode(key: K, data: V): SortingTreeNode<K, V> = this.addNode(key, dummyKey, data)
+
+    /**
+     * 添加根节点（指定排序值）
+     *
+     * @param key 节点唯一键
+     * @param data 节点数据
+     * @param sort 指定的排序值
+     * @return 添加的根节点
+     */
+    fun addRootNode(key: K, data: V, sort: Long? = null): SortingTreeNode<K, V> =
+        this.addNode(key, dummyKey, data, sort)
+
+    /**
+     * 判断一个节点是否为根节点
+     *
+     * @param node 要检查的节点
+     * @return 如果是根节点返回true，否则返回false
+     */
+    fun isRoot(node: SortingTreeNode<K, V>): Boolean = node.parentKey == dummyKey
+
+    /**
+     * 添加节点（sort非空时指定排序值）
+     *
+     * @param key 节点唯一键
+     * @param parentKey 父节点键
+     * @param data 节点数据
+     * @param sort 指定的排序值
+     * @return 添加的节点
+     */
+    fun addNode(key: K, parentKey: K, data: V, sort: Long? = null): SortingTreeNode<K, V>
+
+    /**
+     * 删除节点
+     *
+     * @param key 要删除的节点键
+     * @return 如果删除成功返回true，否则返回false
+     */
+    fun removeNode(key: K): Boolean
+
+    /**
+     * 移动节点到新的父节点下
+     *
+     * @param key 要移动的节点键
+     * @param newParentKey 新的父节点键
+     * @param newSort 可选的新排序值，如果为null则自动计算
+     * @return 移动后的节点，如果移动失败则返回null
+     */
+    fun moveNode(key: K, newParentKey: K, newSort: Long? = null): SortingTreeNode<K, V>?
+
+    /**
+     * 移动节点为根节点
+     *
+     * @param key 要移动的节点键
+     * @param newSort 可选的新排序值，如果为null则自动计算
+     * @return 移动后的节点，如果移动失败则返回null
+     */
+    fun moveNodeToRoot(key: K, newSort: Long? = null): SortingTreeNode<K, V>? = moveNode(key, dummyKey, newSort)
+
+    /**
+     * 移动节点到新的父节点下
+     *
+     * @param node 要移动的节点对象
+     * @param newParentKey 新的父节点键
+     * @param newSort 可选的新排序值，如果为null则自动计算
+     * @return 移动后的节点，如果移动失败则返回null
+     */
+    fun moveNode(node: SortingTreeNode<K, V>, newParentKey: K, newSort: Long? = null): SortingTreeNode<K, V>
+
+    /**
+     * 移动节点为根节点
+     */
+    fun moveNodeToRoot(node: SortingTreeNode<K, V>, newSort: Long? = null): SortingTreeNode<K, V> =
+        moveNode(node, dummyKey, newSort)
+
+    /**
+     * 批量移动节点到新的父节点下
+     *
+     * @param keys 要移动的节点键集合
+     * @param newParentKey 新的父节点键
+     * @return 移动后的节点列表
+     */
+    fun moveNodes(keys: Collection<K>, newParentKey: K): List<SortingTreeNode<K, V>>
+
+    /**
+     * 根据键查找节点
+     *
+     * @param key 节点键
+     * @return 找到的节点，如果不存在则返回null
+     */
+    fun findNodeByKey(key: K): SortingTreeNode<K, V>?
+
+    /**
+     * 将树转换为扁平列表（按排序值排序）
+     *
+     * @return 扁平化的节点列表
+     */
+    fun flattenTree(): List<SortingTreeNode<K, V>>
+
+    /**
+     * 获取树的根节点列表
+     *
+     * @return 根节点列表
+     */
+    fun getRootNodes(): List<SortingTreeNode<K, V>> = getChildren(dummyKey)
+
+    /**
+     * 根据父节点键查找子节点列表
+     *
+     * @param parentKey 父节点键
+     * @return 子节点列表
+     */
+    fun getChildren(parentKey: K): List<SortingTreeNode<K, V>>
+
+    /**
+     * 根据父节点键查找所有子孙节点
+     *
+     * @param parentKey 父节点键
+     * @return 子孙节点列表
+     */
+    fun getDescendants(parentKey: K): List<SortingTreeNode<K, V>>
+
+    /**
+     * 更新节点数据
+     *
+     * @param key 节点键
+     * @param update 新的数据
+     * @return 更新后的节点，如果更新失败则返回null
+     */
+    fun updateNodeData(key: K, update: (V) -> V): SortingTreeNode<K, V>?
+}
+
+/**
  * 有序多叉树抽象类实现
  *
  * @param K 键类型
@@ -419,8 +397,6 @@ interface SortingMultipleTree<K, V> {
 abstract class AbstractSortingMultipleTree<K, V>(
     // 根节点的虚拟父键标识
     override val dummyKey: K,
-    // 路径分隔符
-    override val pathSeparator: String = "/",
     // 节点排序基数
     override val sortBase: Long = 100L,
 ) : SortingMultipleTree<K, V> {
@@ -428,20 +404,8 @@ abstract class AbstractSortingMultipleTree<K, V>(
     // 存储所有节点的映射，便于快速查找
     protected val nodeMap: MutableMap<K, SortingTreeNode<K, V>> = mutableMapOf()
 
-    // 存储路径到节点的映射
-    protected val pathNodeMap: MutableMap<String, SortingTreeNode<K, V>> = mutableMapOf()
-
     // 存储父节点到子节点的映射
     protected val parentChildMap: MutableMap<K, MutableList<SortingTreeNode<K, V>>> = mutableMapOf()
-
-    /**
-     * 生成节点路径
-     *
-     * @param key 节点键
-     * @param parentKey 父节点键
-     * @return 节点路径
-     */
-    protected abstract fun generateNodePath(key: K, parentKey: K): String
 
     /**
      * 计算新节点的排序值
@@ -450,6 +414,22 @@ abstract class AbstractSortingMultipleTree<K, V>(
      * @return 新的排序值
      */
     protected abstract fun calculateNextSort(parentKey: K): Long
+
+    /**
+     * 获取节点的排序索引
+     *
+     * @param sort 节点的排序值
+     * @return 节点的排序索引
+     */
+    protected fun getSortIndex(sort: Long): Long = sort % sortBase
+
+    /**
+     * 获取父节点的排序值
+     *
+     * @param sort 节点的排序值
+     * @return 父节点的排序值
+     */
+    protected fun getParentSort(sort: Long): Long = sort / sortBase
 
     /**
      * 处理排序冲突
@@ -468,12 +448,10 @@ abstract class AbstractSortingMultipleTree<K, V>(
      */
     protected abstract fun moveChildrenForward(parentKey: K, removedSort: Long)
 
-    /**
-     * 递归删除节点及其所有子孙节点
-     *
-     * @param node 要删除的节点
-     */
-    protected abstract fun recursiveRemove(node: SortingTreeNode<K, V>)
+    override fun moveNode(key: K, newParentKey: K, newSort: Long?): SortingTreeNode<K, V>? {
+        val node = findNodeByKey(key) ?: return null
+        return moveNode(node, newParentKey, newSort)
+    }
 
     override fun findNodeByKey(key: K): SortingTreeNode<K, V>? {
         return nodeMap[key]
@@ -483,10 +461,16 @@ abstract class AbstractSortingMultipleTree<K, V>(
         return parentChildMap[parentKey]?.sortedBy { it.sort } ?: emptyList()
     }
 
-    override fun getDescendants(nodePath: String): List<SortingTreeNode<K, V>> {
-        return pathNodeMap
-            .filter { (key, _) -> key.startsWith(nodePath) }
-            .map { (_, value) -> value }
-            .sortedBy { it.sort }
+    override fun getDescendants(parentKey: K): List<SortingTreeNode<K, V>> {
+        val descendants = mutableListOf<SortingTreeNode<K, V>>()
+        val queue = ArrayDeque(getChildren(parentKey))
+
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            descendants.add(current)
+            queue.addAll(getChildren(current.key))
+        }
+
+        return descendants.sortedBy { it.sort }
     }
 }

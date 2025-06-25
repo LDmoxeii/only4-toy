@@ -18,8 +18,8 @@ class DefaultSortingTreeSynchronizerTest {
     @BeforeEach
     fun setup() {
         // 创建源树和目标树，使用相同的基本配置
-        sourceTree = DefaultSortingMultipleTree("ROOT", "/", 100L)
-        targetTree = DefaultSortingMultipleTree("ROOT", "/", 100L)
+        sourceTree = DefaultSortingMultipleTree("ROOT", 100L)
+        targetTree = DefaultSortingMultipleTree("ROOT", 100L)
 
         // 创建同步器，使用默认的值比较器
         synchronizer = DefaultSortingTreeSynchronizer { v1, v2 -> v1 == v2 }
@@ -366,8 +366,8 @@ class DefaultSortingTreeSynchronizerTest {
         @Test
         fun `处理不同排序基数的树`() {
             // 创建不同排序基数的树
-            val sourceTreeDifferentBase = DefaultSortingMultipleTree<String, String>("ROOT", "/", 1000L)
-            val targetTreeDifferentBase = DefaultSortingMultipleTree<String, String>("ROOT", "/", 100L)
+            val sourceTreeDifferentBase = DefaultSortingMultipleTree<String, String>("ROOT", 1000L)
+            val targetTreeDifferentBase = DefaultSortingMultipleTree<String, String>("ROOT", 100L)
 
             // 在源树中添加节点
             sourceTreeDifferentBase.addRootNode("root1", "根", 1L)

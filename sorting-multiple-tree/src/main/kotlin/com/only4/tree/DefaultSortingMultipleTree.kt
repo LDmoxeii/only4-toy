@@ -9,30 +9,14 @@ package com.only4.tree
 class DefaultSortingMultipleTree<K, V>(
     // 根节点的虚拟父键标识
     override val dummyKey: K,
-    // 路径分隔符
-    override val pathSeparator: String = "/",
     // 节点排序基数
     override val sortBase: Long = 100L,
-) : AbstractSortingMultipleTree<K, V>(dummyKey, pathSeparator, sortBase) {
-
-    /**
-     * 添加节点（自动分配排序值）
-     */
-    override fun addNode(key: K, parentKey: K, data: V): SortingTreeNode<K, V> {
-        // 检查键是否已存在
-        require(!nodeMap.containsKey(key)) { "Node with key $key already exists" }
-
-        // 计算下一个子节点索引
-        val nextSortIndex = calculateNextSort(parentKey)
-
-        // 使用子节点索引添加节点
-        return addNode(key, parentKey, data, nextSortIndex)
-    }
+) : AbstractSortingMultipleTree<K, V>(dummyKey, sortBase) {
 
     /**
      * 添加节点（指定排序值）
      */
-    override fun addNode(key: K, parentKey: K, data: V, sort: Long): SortingTreeNode<K, V> {
+    override fun addNode(key: K, parentKey: K, data: V, sort: Long?): SortingTreeNode<K, V> {
         // 检查键是否已存在
         require(!nodeMap.containsKey(key)) { "Node with key $key already exists" }
 
@@ -40,24 +24,20 @@ class DefaultSortingMultipleTree<K, V>(
         val nextAvailableIndex = calculateNextSort(parentKey)
 
         // 如果指定的排序号大于下一个可用的排序索引，则使用下一个可用的排序索引
-        val actualSortIndex = if (sort > nextAvailableIndex) nextAvailableIndex else sort
+        val actualSortIndex = if (sort == null || sort > nextAvailableIndex) nextAvailableIndex else sort
 
         // 获取父节点排序值
         val parentSort = if (parentKey != dummyKey) findNodeByKey(parentKey)?.sort ?: 0L else 0L
         // 计算实际排序值: 父节点排序 * 100 + 实际的排序索引
         val actualSort = parentSort * sortBase + actualSortIndex
 
-        // 生成节点路径
-        val nodePath = generateNodePath(key, parentKey)
-
         // 创建节点
-        val node = DefaultSortingTreeNode(key, parentKey, actualSort, nodePath, data)
+        val node = DefaultSortingTreeNode(key, parentKey, actualSort, data)
 
         // 检查是否需要解决排序冲突
         handleSortConflict(parentKey, actualSort)
 
         nodeMap[key] = node
-        pathNodeMap[nodePath] = node
         parentChildMap.getOrPut(parentKey) { mutableListOf() }.add(node)
 
         findNodeByKey(parentKey)?.children?.add(node)
@@ -85,11 +65,16 @@ class DefaultSortingMultipleTree<K, V>(
         return true
     }
 
-    /**
-     * 获取树的根节点列表
-     */
-    override fun getRootNodes(): List<SortingTreeNode<K, V>> {
-        return getChildren(dummyKey)
+    override fun updateNodeData(key: K, update: (V) -> V): SortingTreeNode<K, V>? {
+        // 查找节点
+        val node = findNodeByKey(key) ?: return null
+
+        // 更新节点数据
+        val newData = update(node.data)
+        node.data = newData
+
+        // 返回更新后的节点
+        return node
     }
 
     /**
@@ -97,22 +82,6 @@ class DefaultSortingMultipleTree<K, V>(
      */
     override fun flattenTree(): List<SortingTreeNode<K, V>> {
         return nodeMap.values.sortedBy { it.sort }
-    }
-
-    /**
-     * 生成节点路径
-     */
-    override fun generateNodePath(key: K, parentKey: K): String {
-        if (parentKey == dummyKey) {
-            return "$dummyKey$pathSeparator$key"
-        }
-
-        val parentNode = findNodeByKey(parentKey)
-
-        // 确保父节点存在
-        requireNotNull(parentNode) { "Parent node with key $parentKey not found" }
-
-        return "${parentNode.nodePath}$pathSeparator$key"
     }
 
     /**
@@ -203,7 +172,7 @@ class DefaultSortingMultipleTree<K, V>(
     /**
      * 递归删除节点及其子节点
      */
-    override fun recursiveRemove(node: SortingTreeNode<K, V>) {
+    private fun recursiveRemove(node: SortingTreeNode<K, V>) {
         // 首先递归删除所有子节点
         val childrenCopy = node.children.toList()
         for (child in childrenCopy) {
@@ -212,7 +181,6 @@ class DefaultSortingMultipleTree<K, V>(
 
         // 删除当前节点
         nodeMap.remove(node.key)
-        pathNodeMap.remove(node.nodePath)
 
         // 从父子映射中删除
         val parentKey = node.parentKey
@@ -230,34 +198,7 @@ class DefaultSortingMultipleTree<K, V>(
     }
 
     /**
-     * 获取排序索引（排序值的最后两位）
-     */
-    private fun getSortIndex(sort: Long): Long {
-        return sort % sortBase
-    }
-
-    /**
-     * 获取父节点排序值
-     */
-    private fun getParentSort(sort: Long): Long {
-        return sort / sortBase
-    }
-
-    /**
      * 移动节点到新的父节点下
-     */
-    override fun moveNode(key: K, newParentKey: K, newSort: Long?): SortingTreeNode<K, V>? {
-        val node = findNodeByKey(key) ?: return null
-        return moveNode(node, newParentKey, newSort)
-    }
-
-    /**
-     * 移动节点到新的父节点下，这是核心的移动逻辑实现。
-     * 1. 检查操作合法性（如循环依赖）。
-     * 2. 从旧父节点分离。
-     * 3. 更新节点自身及其所有子孙的排序值和路径。
-     * 4. 附加到新父节点下。
-     * 5. 处理新位置的排序冲突并整理旧位置的兄弟节点排序。
      */
     override fun moveNode(node: SortingTreeNode<K, V>, newParentKey: K, newSort: Long?): SortingTreeNode<K, V> {
         require(node is DefaultSortingTreeNode) { "Node must be an instance of DefaultSortingTreeNode" }
@@ -281,11 +222,6 @@ class DefaultSortingMultipleTree<K, V>(
         val newParentAbsoluteSort = if (newParentKey == dummyKey) 0L else findNodeByKey(newParentKey)?.sort ?: 0L
         node.sort = newParentAbsoluteSort * sortBase + actualSortIndex
         node.parentKey = newParentKey
-
-        // 更新路径，它依赖于新的parentKey
-        pathNodeMap.remove(node.nodePath)
-        node.nodePath = generateNodePath(node.key, newParentKey)
-        pathNodeMap[node.nodePath] = node
 
         // 步骤 3: 递归更新所有子孙节点的路径和排序值
         updateDescendantsRecursively(node)
@@ -330,21 +266,6 @@ class DefaultSortingMultipleTree<K, V>(
         }
 
         return result
-    }
-
-    /**
-     * 通过节点路径移动节点
-     */
-    override fun moveNodeByPath(nodePath: String, newParentPath: String): SortingTreeNode<K, V> {
-        // 查找源节点和目标父节点
-        val node = pathNodeMap[nodePath]
-        val newParentNode = pathNodeMap[newParentPath]
-
-        requireNotNull(node) { "Source node with path $nodePath not found" }
-        requireNotNull(newParentNode) { "Target parent node with path $newParentPath not found" }
-
-        // 移动节点
-        return moveNode(node, newParentNode.key)
     }
 
     /**
@@ -401,22 +322,16 @@ class DefaultSortingMultipleTree<K, V>(
     }
 
     /**
-     * 递归更新所有子孙节点的路径和排序值。
-     * 这是对旧的基于字符串操作的 `updateDescendantsPathAndSort` 的替代。
+     * 递归更新所有子孙节点排序值。
      */
     private fun updateDescendantsRecursively(parentNode: DefaultSortingTreeNode<K, V>) {
         getChildren(parentNode.key).forEach { child ->
             if (child is DefaultSortingTreeNode) {
-                // 1. 更新路径
-                pathNodeMap.remove(child.nodePath)
-                child.nodePath = generateNodePath(child.key, parentNode.key)
-                pathNodeMap[child.nodePath] = child
-
-                // 2. 更新排序值（基于纯数学运算）
+                // 1. 更新排序值（基于纯数学运算）
                 val sortIndex = getSortIndex(child.sort)
                 child.sort = parentNode.sort * sortBase + sortIndex
 
-                // 3. 递归到下一层
+                // 2. 递归到下一层
                 updateDescendantsRecursively(child)
             }
         }
