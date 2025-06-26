@@ -35,7 +35,20 @@
         </el-select>
       </el-form-item>
       <el-form-item label="排序" prop="sort">
-        <el-input-number v-model="form.sort" :min="0" style="width: 100%"></el-input-number>
+        <el-input-number v-model="form.relativeSortIndex" :min="0" style="width: 100%"></el-input-number>
+        <div class="sort-hint">
+          <i class="el-icon-info"></i>
+          <span v-if="!form.parentKey">排序值: {{ form.relativeSortIndex }}</span>
+          <span v-else>
+            <template v-if="getParentSort() > 0">
+              排序值: {{ getParentSort() }}{{ form.relativeSortIndex.toString().padStart(2, '0') }}
+              (父节点: {{ getParentSort() }})
+            </template>
+            <template v-else>
+              排序值: {{ form.sort }}
+            </template>
+          </span>
+        </div>
       </el-form-item>
       <el-form-item label="是否显示" prop="showStatus">
         <el-switch v-model="form.showStatus"></el-switch>
@@ -96,9 +109,11 @@ export default {
         enTitle: '',
         parentKey: '',
         sort: 0,
+        relativeSortIndex: 0,
         showStatus: true,
         activeStatus: true
       },
+      sortBase: 100,
       parents: [],
       rules: {
         key: [
@@ -131,6 +146,11 @@ export default {
         }
       },
       deep: true
+    },
+    'form.parentKey': {
+      handler() {
+        this.calculateRelativeSortIndex()
+      }
     }
   },
   methods: {
@@ -138,7 +158,43 @@ export default {
     initForm() {
       if (this.resource) {
         this.form = {...this.resource}
+        this.calculateRelativeSortIndex()
       }
+    },
+
+    // 计算相对排序索引
+    calculateRelativeSortIndex() {
+      const parentSort = this.getParentSort()
+      if (parentSort === 0) {
+        // 如果是顶级节点，直接返回
+        this.form.relativeSortIndex = this.form.sort
+      } else {
+        // 如果是子节点，计算与父节点的相对索引
+        this.form.relativeSortIndex = this.form.sort % this.sortBase
+      }
+    },
+
+    // 获取父节点排序值
+    getParentSort() {
+      if (!this.form.parentKey) return 0
+
+      // 从父节点列表中找到对应的父节点
+      const parent = this.parents.find(p => p.value === this.form.parentKey)
+
+      // 检查父节点是否存在且有排序值
+      if (parent && parent.sort !== undefined) {
+        // 获取父节点的基本排序值
+        const baseSort = Math.floor(parent.sort / this.sortBase) * this.sortBase
+        return baseSort / this.sortBase
+      }
+
+      // 如果无法获取父节点排序值，则从当前节点排序推算
+      if (this.form.sort > this.sortBase) {
+        // 如果当前节点排序值大于基数，推算父节点排序值
+        return Math.floor(this.form.sort / this.sortBase)
+      }
+
+      return 0
     },
 
     // 加载可用父节点
@@ -147,6 +203,9 @@ export default {
         const excludeId = this.isCreate ? null : this.resource.key
         const response = await getAvailableParents(this.selector, excludeId)
         this.parents = response.data
+
+        // 加载完父节点后重新计算相对排序索引
+        this.calculateRelativeSortIndex()
       } catch (error) {
         console.error('加载父节点失败:', error)
         this.$message.error('加载父节点失败')
@@ -157,7 +216,25 @@ export default {
     submitForm() {
       this.$refs.form.validate((valid) => {
         if (valid) {
-          this.$emit('submit', {...this.form})
+          // 计算实际的sort值
+          const submitData = {...this.form}
+
+          // 根据相对索引和父节点计算实际的sort值
+          const parentSort = this.getParentSort()
+          if (!this.form.parentKey || parentSort === 0) {
+            // 顶级节点 - 直接使用相对索引作为排序值
+            submitData.sort = this.form.relativeSortIndex
+          } else {
+            // 子节点 - 父节点值*100 + 相对索引
+            submitData.sort = parentSort * this.sortBase + this.form.relativeSortIndex
+          }
+
+          // 确保排序值在合理范围内
+          if (submitData.sort < 0) {
+            submitData.sort = 0
+          }
+
+          this.$emit('submit', submitData)
           this.dialogVisible = false
         }
       })
@@ -171,3 +248,19 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.sort-hint {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 5px;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+}
+
+.sort-hint i {
+  margin-right: 4px;
+  color: #E6A23C;
+}
+</style>

@@ -16,7 +16,10 @@
               v-model="selectedKeys[data.key]"
               @change="(val) => handleCheckChange(val, data)"
           ></el-checkbox>
-          <span class="node-label" @dblclick="handleEditNode(data)">{{ data.title }}</span>
+          <span class="node-label" @dblclick="handleEditNode(data)">
+            {{ data.title }}
+            <span v-if="showSortIndex" class="sort-index">({{ calculateRelativeSortIndex(data) }})</span>
+          </span>
           <div class="node-actions">
             <el-tooltip content="启用/停用" placement="top" v-if="showActionButtons">
               <el-button
@@ -58,6 +61,14 @@ export default {
     showActionButtons: {
       type: Boolean,
       default: true
+    },
+    showSortIndex: {
+      type: Boolean,
+      default: true
+    },
+    sortBase: {
+      type: Number,
+      default: 100
     },
     selector: {
       type: Number,
@@ -161,6 +172,37 @@ export default {
     // 处理复选框变化
     handleCheckChange(checked, data) {
       this.$emit('check-change', {data, checked})
+    },
+
+    // 计算相对排序索引
+    calculateRelativeSortIndex(node) {
+      if (!node || !node.sort) return 0
+
+      // 获取父节点和排序基数
+      const parentNode = this.findParentNode(node.key)
+      const parentSort = parentNode ? parentNode.sort : 0
+      const baseDivisor = this.sortBase || 100
+
+      // 计算相对索引
+      if (parentSort === 0) {
+        // 如果是顶级节点，直接返回
+        return node.sort
+      } else {
+        // 如果是子节点，计算与父节点的相对索引
+        return node.sort % baseDivisor
+      }
+    },
+
+    // 查找父节点
+    findParentNode(nodeKey) {
+      if (!this.resources || !nodeKey) return null
+
+      // 先找到当前节点
+      const currentNode = this.resources.find(item => item.key === nodeKey)
+      if (!currentNode || !currentNode.parentKey) return null
+
+      // 再找到父节点
+      return this.resources.find(item => item.key === currentNode.parentKey)
     }
   }
 }
@@ -207,6 +249,13 @@ export default {
   text-overflow: ellipsis;
   font-weight: 500;
   color: #303133;
+}
+
+.sort-index {
+  font-size: 13px;
+  color: #606266;
+  margin-left: 5px;
+  font-weight: normal;
 }
 
 .node-actions {
