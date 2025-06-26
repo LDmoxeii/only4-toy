@@ -1,0 +1,106 @@
+### 获取API表1树
+POST http://localhost:8989/api/resources/tree?
+    selector=1
+
+### 获取API表2树
+POST http://localhost:8989/api/resources/tree?
+    selector=2
+
+### 获取资源树的差异
+POST http://localhost:8989/api/resources/getDifferences?
+    sourceSelector=1&
+    targetSelector=2
+
+### 同步资源
+POST http://localhost:8989/api/resources/sync?
+    sourceSelector=1&
+    targetSelector=2
+Content-Type: application/json
+
+[
+  "api-1",
+  "api-2",
+  "api-3"
+]
+
+### 同步预览
+POST http://localhost:8989/api/resources/preview-sync?
+    sourceSelector=1&
+    targetSelector=2
+Content-Type: application/json
+
+[
+  "api-1",
+  "api-2",
+  "api-3"
+]
+
+### 更新单个资源
+POST http://localhost:8989/api/resources/add/api-1?
+    selector=1
+Content-Type: application/json
+
+{
+  "key": "api-1",
+  "title": "更新后的API资源",
+  "enTitle": "Updated API Resource",
+  "parentKey": "",
+  "sort": 100,
+  "showStatus": true,
+  "activeStatus": true
+}
+
+### 创建新资源
+POST http://localhost:8989/api/resources?
+    selector=1
+Content-Type: application/json
+
+{
+  "key": "api-new",
+  "title": "新建API资源",
+  "enTitle": "New API Resource",
+  "parentKey": "api-1",
+  "sort": 101,
+  "showStatus": true,
+  "activeStatus": true
+}
+
+### 删除资源
+POST http://localhost:8989/api/resources/delete/api-new?
+    selector=1
+
+### 更新资源状态（启用/停用）
+PATCH http://localhost:8989/api/resources/api-1/status?
+    selector=1&
+    activeStatus=false
+
+### 批量更新资源状态
+PATCH http://localhost:8989/api/resources/batch/status?
+    selector=2&
+    activeStatus=true
+Content-Type: application/json
+
+[
+  "api-1",
+  "api-2",
+  "api-3"
+]
+
+### 批量删除资源
+POST http://localhost:8989/api/resources/batch/delete?
+    selector=1
+Content-Type: application/json
+
+[
+  "api-delete-1",
+  "api-delete-2"
+]
+
+### 搜索资源
+POST http://localhost:8989/api/resources/search?
+    selector=1&
+    query=API
+
+### 获取可用的父节点列表
+POST http://localhost:8989/api/resources/parents?
+    selector=1

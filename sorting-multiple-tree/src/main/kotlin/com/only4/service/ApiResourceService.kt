@@ -31,7 +31,7 @@ interface ApiResourceService {
     /**
      * 更新资源状态
      */
-    fun updateResourceStatus(id: String, activeStatus: Boolean, tableSelector: Int): ApiResource
+    fun updateResourceStatus(id: String, activeStatus: Boolean, tableSelector: Int): Int
 
     /**
      * 批量更新状态
@@ -41,7 +41,7 @@ interface ApiResourceService {
     /**
      * 批量删除
      */
-    fun batchDelete(ids: List<String>, tableSelector: Int): Int
+    fun batchDelete(ids: List<String>, tableSelector: Int): Boolean
 
     /**
      * 搜索资源
@@ -51,8 +51,5 @@ interface ApiResourceService {
     /**
      * 获取可用的父节点列表
      */
-    fun getAvailableParents(
-        tableSelector: Int,
-        excludeId: String? = null
-    ): List<SortingTreeNode<String, ApiResource.ApiResourceInfo>>
+    fun getAvailableParents(tableSelector: Int): List<SortingTreeNode<String, ApiResource.ApiResourceInfo>>
 }

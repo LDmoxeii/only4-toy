@@ -8,71 +8,30 @@ import com.only4.tree.AbstractSortingMultipleTree
 import com.only4.tree.SortingTreeNode
 
 @TableName(value = "api_resource_1", autoResultMap = true)
-data class ApiResource(
-    @TableId
-    override val key: String,
+class ApiResource() : SortingTreeNode<String, ApiResource.ApiResourceInfo> {
+    @TableId("id")
+    override lateinit var key: String
 
     @TableField("parent_id")
-    override var parentKey: String,
+    override lateinit var parentKey: String
 
     @TableField("node_path")
-    override var nodePath: String,
+    override lateinit var nodePath: String
 
     @TableField
-    override var sort: Long,
+    override var sort: Long = 0L
 
     @TableField(exist = false)
-    override var data: ApiResourceInfo = ApiResourceInfo(),
+    override var data: ApiResourceInfo = ApiResourceInfo()
 
     @TableField(exist = false)
     @JsonIgnore
-    override val children: MutableList<SortingTreeNode<String, ApiResourceInfo>> = mutableListOf(),
+    override val children: MutableList<SortingTreeNode<String, ApiResourceInfo>> = mutableListOf()
 
     // 表名选择器，默认为1，可以设置为1或2
     @TableField(exist = false)
     @JsonIgnore
     var tableSelector: Int = 1
-) : SortingTreeNode<String, ApiResource.ApiResourceInfo> {
-
-    // 无参构造函数，用于MyBatis
-    constructor() : this(
-        key = "",
-        parentKey = "",
-        nodePath = "",
-        sort = 0,
-        data = ApiResourceInfo(),
-        children = mutableListOf(),
-        tableSelector = 1
-    )
-
-    // 添加一个构造函数用于处理MyBatis查询结果映射
-    constructor(
-        id: String,
-        parentId: String,
-        nodePath: String,
-        sort: Long,
-        title: String,
-        enTitle: String,
-        showStatus: Boolean,
-        activeStatus: Boolean
-    ) : this(
-        key = id,
-        parentKey = parentId,
-        nodePath = nodePath,
-        sort = sort,
-        data = ApiResourceInfo(
-            title = title,
-            enTitle = enTitle,
-            showStatus = showStatus,
-            activeStatus = activeStatus
-        )
-    ) {
-        // 设置属性
-        this.title = title
-        this.enTitle = enTitle
-        this.showStatus = showStatus
-        this.activeStatus = activeStatus
-    }
 
     @TableField("title")
     var title: String = ""
@@ -105,6 +64,14 @@ data class ApiResource(
             field = value
             data.activeStatus = value
         }
+
+    constructor(key: String, parentKey: String, nodePath: String, sort: Long, data: ApiResourceInfo) : this() {
+        this.key = key
+        this.parentKey = parentKey
+        this.nodePath = nodePath
+        this.sort = sort
+        this.data = data
+    }
 
     data class ApiResourceInfo(
         var title: String = "",

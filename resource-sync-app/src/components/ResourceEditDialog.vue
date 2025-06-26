@@ -200,8 +200,7 @@ export default {
     // 加载可用父节点
     async loadParents() {
       try {
-        const excludeId = this.isCreate ? null : this.resource.key
-        const response = await getAvailableParents(this.selector, excludeId)
+        const response = await getAvailableParents(this.selector)
         this.parents = response.data
 
         // 加载完父节点后重新计算相对排序索引
@@ -223,15 +222,16 @@ export default {
           const parentSort = this.getParentSort()
           if (!this.form.parentKey || parentSort === 0) {
             // 顶级节点 - 直接使用相对索引作为排序值
-            submitData.sort = this.form.relativeSortIndex
+            submitData.sort = this.form.relativeSortIndex || 1 // 确保不为0
           } else {
             // 子节点 - 父节点值*100 + 相对索引
-            submitData.sort = parentSort * this.sortBase + this.form.relativeSortIndex
+            const relativeIndex = this.form.relativeSortIndex || 1 // 确保不为0
+            submitData.sort = parentSort * this.sortBase + relativeIndex
           }
 
-          // 确保排序值在合理范围内
-          if (submitData.sort < 0) {
-            submitData.sort = 0
+          // 确保排序值大于0
+          if (submitData.sort <= 0) {
+            submitData.sort = 1
           }
 
           this.$emit('submit', submitData)

@@ -1,6 +1,6 @@
 package com.only4.service.impl
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl
 import com.only4.config.ApiResourceTableNameHandler
 import com.only4.entity.ApiResource
@@ -65,8 +65,7 @@ class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), Ap
                         val nodeKey = syncResult.node.key
                         // 从数据库中删除
 
-                        val wrapper = lambdaQuery().eq(ApiResource::key, nodeKey)
-                        remove(wrapper)
+                        removeById(nodeKey)
                     }
 
                     SortingTreeSynchronizer.SyncType.SAME -> continue
@@ -104,11 +103,6 @@ class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), Ap
             val node = tree.findNodeByKey(resource.key) as? ApiResource
                 ?: throw IllegalArgumentException("Resource with id ${resource.key} not found")
 
-            // 如果父节点或排序发生变化，需要移动节点
-            if (node.parentKey != resource.parentKey || node.sort != resource.sort) {
-                tree.moveNode(node, resource.parentKey, resource.sort)
-            }
-
             // 更新数据
             node.title = resource.title
             node.enTitle = resource.enTitle
@@ -144,8 +138,7 @@ class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), Ap
                 sort = resource.sort
             ) as ApiResource
 
-            // 保存到数据库
-            saveOrUpdate(node)
+            saveBatch(tree.flattenTree().map { it as ApiResource })
 
             return node
         } finally {
@@ -161,18 +154,15 @@ class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), Ap
             ApiResourceTableNameHandler.setTableSelector(tableSelector)
 
             // 获取当前树
+            val originalTree = getTree(tableSelector)
             val tree = getTree(tableSelector)
 
-            // 从树中删除节点
-            if (tree.removeNode(id)) {
-                // 从数据库中删除节点及其子节点
-                val wrapper = LambdaQueryWrapper<ApiResource>()
-                    .likeRight(ApiResource::nodePath, "$id/")
-                    .or()
-                    .eq(ApiResource::key, id)
-
-                return remove(wrapper)
-            }
+            tree.removeNode(id)
+            val deletedKey = originalTree.flattenTree()
+                .filter { tree.findNodeByKey(it.key) == null }
+                .map { it.key }
+            batchDelete(deletedKey, tableSelector)
+            saveOrUpdateBatch(tree.flattenTree().map { it as ApiResource })
 
             return false
         } finally {
@@ -183,7 +173,7 @@ class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), Ap
     /**
      * 更新资源状态
      */
-    override fun updateResourceStatus(id: String, activeStatus: Boolean, tableSelector: Int): ApiResource {
+    override fun updateResourceStatus(id: String, activeStatus: Boolean, tableSelector: Int): Int {
         try {
             ApiResourceTableNameHandler.setTableSelector(tableSelector)
 
@@ -194,13 +184,16 @@ class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), Ap
             val node = tree.findNodeByKey(id) as? ApiResource
                 ?: throw IllegalArgumentException("Resource with id $id not found")
 
+            val descendants = tree.getDescendants(node.key)
+
             // 更新状态
-            node.activeStatus = activeStatus
+            (descendants + node)
+                .forEach { it.data.activeStatus = activeStatus }
 
             // 保存到数据库
-            saveOrUpdate(node)
+            saveOrUpdateBatch(descendants.map { it as ApiResource } + node)
 
-            return node
+            return (descendants + node).size
         } finally {
             ApiResourceTableNameHandler.clear()
         }
@@ -211,19 +204,12 @@ class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), Ap
      */
     override fun batchUpdateStatus(ids: List<String>, activeStatus: Boolean, tableSelector: Int): Int {
         if (ids.isEmpty()) return 0
-
         try {
+            var total = 0
             ApiResourceTableNameHandler.setTableSelector(tableSelector)
 
-            // 构建条件
-            val wrapper = LambdaQueryWrapper<ApiResource>()
-                .`in`(ApiResource::key, ids)
-
-            // 更新状态
-            val entity = ApiResource()
-            entity.activeStatus = activeStatus
-
-            return baseMapper.update(entity, wrapper)
+            ids.forEach { total += updateResourceStatus(it, activeStatus, tableSelector) }
+            return total
         } finally {
             ApiResourceTableNameHandler.clear()
         }
@@ -232,42 +218,15 @@ class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), Ap
     /**
      * 批量删除
      */
-    override fun batchDelete(ids: List<String>, tableSelector: Int): Int {
-        if (ids.isEmpty()) return 0
+    override fun batchDelete(ids: List<String>, tableSelector: Int): Boolean {
+        if (ids.isEmpty()) return true
 
         try {
             ApiResourceTableNameHandler.setTableSelector(tableSelector)
 
-            // 获取当前树
-            val tree = getTree(tableSelector)
+            ids.forEach { deleteResource(it, tableSelector) }
 
-            // 删除的计数
-            var count = 0
-
-            // 从树中删除节点
-            for (id in ids) {
-                if (tree.removeNode(id)) {
-                    count++
-                }
-            }
-
-            // 从数据库中删除节点及其子节点
-            if (count > 0) {
-                // 构建多个条件，删除节点及其子节点
-                val wrapper = LambdaQueryWrapper<ApiResource>()
-
-                // 添加节点自身条件
-                wrapper.`in`(ApiResource::key, ids)
-
-                // 添加子节点条件
-                for (id in ids) {
-                    wrapper.or().likeRight(ApiResource::nodePath, "$id/")
-                }
-
-                remove(wrapper)
-            }
-
-            return count
+            return true
         } finally {
             ApiResourceTableNameHandler.clear()
         }
@@ -281,12 +240,12 @@ class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), Ap
             ApiResourceTableNameHandler.setTableSelector(tableSelector)
 
             // 构建搜索条件
-            val wrapper = LambdaQueryWrapper<ApiResource>()
-                .like(ApiResource::title, query)
+            val wrapper = QueryWrapper<ApiResource>()
+                .like("title", query)
                 .or()
-                .like(ApiResource::enTitle, query)
+                .like("en_title", query)
                 .or()
-                .like(ApiResource::key, query)
+                .like("id", query)
 
             return list(wrapper)
         } finally {
@@ -297,10 +256,7 @@ class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), Ap
     /**
      * 获取可用的父节点列表
      */
-    override fun getAvailableParents(
-        tableSelector: Int,
-        excludeId: String?
-    ): List<SortingTreeNode<String, ApiResource.ApiResourceInfo>> {
+    override fun getAvailableParents(tableSelector: Int): List<SortingTreeNode<String, ApiResource.ApiResourceInfo>> {
         try {
             ApiResourceTableNameHandler.setTableSelector(tableSelector)
 
@@ -310,25 +266,9 @@ class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), Ap
             // 获取所有节点
             val allNodes = tree.flattenTree()
 
-            // 如果需要排除特定节点及其子节点
-            return if (excludeId != null) {
-                // 查找要排除的节点
-                val excludeNode = tree.findNodeByKey(excludeId)
+            return allNodes.map { it as ApiResource }
+                .filter { it.activeStatus }
 
-                if (excludeNode != null) {
-                    // 获取要排除的节点路径
-                    val excludePath = excludeNode.nodePath
-
-                    // 过滤掉要排除的节点及其所有子节点
-                    allNodes.filter { node ->
-                        !node.key.equals(excludeId) && !node.nodePath.startsWith("$excludePath/")
-                    }
-                } else {
-                    allNodes
-                }
-            } else {
-                allNodes
-            }
         } finally {
             ApiResourceTableNameHandler.clear()
         }

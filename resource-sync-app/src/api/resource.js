@@ -2,12 +2,12 @@ import axios from 'axios'
 
 // 获取资源树
 export function getResourceTree(selector) {
-    return axios.get('/resources/tree', {params: {selector}})
+    return axios.post('/resources/tree', null, {params: {selector}})
 }
 
 // 获取差异数据
 export function getDifferences(sourceSelector, targetSelector) {
-    return axios.get('/resources/getDifferences', {
+    return axios.post('/resources/getDifferences', null, {
         params: {sourceSelector, targetSelector}
     })
 }
@@ -28,35 +28,52 @@ export function previewSync(resources, sourceSelector, targetSelector) {
 
 // 更新资源
 export function updateResource(id, resource, selector) {
-    return axios.post(`/resources/${id}`, resource, {
+    return axios.post(`/resources/add/${id}`, resource, {
         params: {selector}
     })
 }
 
 // 创建资源
 export function createResource(resource, selector) {
-    return axios.post('/resources', resource, {
+    // 创建资源对象的副本，避免修改原对象
+    const resourceToSend = {...resource};
+
+    // 移除relativeSortIndex字段，后端API可能不需要这个字段
+    if ('relativeSortIndex' in resourceToSend) {
+        // 如果sort值为0且存在relativeSortIndex，使用relativeSortIndex作为sort值
+        if (resourceToSend.sort === 0 && resourceToSend.relativeSortIndex) {
+            resourceToSend.sort = resourceToSend.relativeSortIndex;
+        }
+        delete resourceToSend.relativeSortIndex;
+    }
+
+    // 确保sort字段有值
+    if (!resourceToSend.sort && resourceToSend.sort !== 0) {
+        resourceToSend.sort = 1; // 默认值
+    }
+
+    return axios.post('/resources', resourceToSend, {
         params: {selector}
     })
 }
 
 // 删除资源
 export function deleteResource(id, selector) {
-    return axios.delete(`/resources/${id}`, {
+    return axios.post(`/resources/delete/${id}`, null, {
         params: {selector}
     })
 }
 
 // 更新资源状态
 export function updateResourceStatus(id, activeStatus, selector) {
-    return axios.patch(`/resources/${id}/status`, {}, {
+    return axios.post(`/resources/${id}/status`, {}, {
         params: {selector, activeStatus}
     })
 }
 
 // 批量更新状态
 export function batchUpdateStatus(ids, activeStatus, selector) {
-    return axios.patch('/resources/batch/status', ids, {
+    return axios.post('/resources/batch/status', ids, {
         params: {selector, activeStatus}
     })
 }
@@ -70,14 +87,14 @@ export function batchDelete(ids, selector) {
 
 // 搜索资源
 export function searchResources(query, selector) {
-    return axios.get('/resources/search', {
+    return axios.post('/resources/search', null, {
         params: {selector, query}
     })
 }
 
 // 获取可用父节点
-export function getAvailableParents(selector, excludeId) {
-    return axios.get('/resources/parents', {
-        params: {selector, excludeId}
+export function getAvailableParents(selector) {
+    return axios.post('/resources/parents', null, {
+        params: {selector}
     })
 }

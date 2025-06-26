@@ -18,21 +18,21 @@ class ApiResourceController(
     /**
      * 获取资源树
      */
-    @GetMapping("/tree")
+    @PostMapping("/tree")
     fun getResourceTree(
         @RequestParam selector: Int
     ): ResponseEntity<List<ApiResource>> {
         val tree = apiResourceService.getTree(selector)
-        return ResponseEntity(tree.flattenTree(), HttpStatus.OK) as ResponseEntity<List<ApiResource>>
+        return ResponseEntity(tree.flattenTree().map { it as ApiResource }, HttpStatus.OK)
     }
 
     /**
      * 获取资源树的差异
      */
-    @GetMapping("/getDifferences")
+    @PostMapping("/getDifferences")
     fun getDifferences(
-        @RequestParam(required = false) sourceSelector: Int = 1,
-        @RequestParam(required = false) targetSelector: Int = 2
+        @RequestParam sourceSelector: Int,
+        @RequestParam targetSelector: Int,
     ): ResponseEntity<List<SyncResult<String, ApiResource.ApiResourceInfo>>> {
         // 获取源表树
         val sourceTree = apiResourceService.getTree(sourceSelector)
@@ -50,8 +50,8 @@ class ApiResourceController(
      */
     @PostMapping("/sync")
     fun syncResources(
-        @RequestParam(required = false) sourceSelector: Int = 1,
-        @RequestParam(required = false) targetSelector: Int = 2,
+        @RequestParam sourceSelector: Int,
+        @RequestParam targetSelector: Int,
         @RequestBody resources: List<String>
     ): ResponseEntity<String> {
         // 获取源表树
@@ -81,8 +81,8 @@ class ApiResourceController(
      */
     @PostMapping("/preview-sync")
     fun previewSync(
-        @RequestParam(required = false) sourceSelector: Int = 1,
-        @RequestParam(required = false) targetSelector: Int = 2,
+        @RequestParam sourceSelector: Int,
+        @RequestParam targetSelector: Int,
         @RequestBody resources: List<String>
     ): ResponseEntity<List<SyncResult<String, ApiResource.ApiResourceInfo>>> {
         // 获取源表树
@@ -104,7 +104,7 @@ class ApiResourceController(
     /**
      * 更新单个资源
      */
-    @PostMapping("/{id}")
+    @PostMapping("add/{id}")
     fun updateResource(
         @PathVariable id: String,
         @RequestParam selector: Int,
@@ -129,7 +129,7 @@ class ApiResourceController(
     /**
      * 删除资源
      */
-    @DeleteMapping("/{id}")
+    @PostMapping("delete/{id}")
     fun deleteResource(
         @PathVariable id: String,
         @RequestParam selector: Int
@@ -146,7 +146,7 @@ class ApiResourceController(
         @PathVariable id: String,
         @RequestParam selector: Int,
         @RequestParam activeStatus: Boolean
-    ): ResponseEntity<ApiResource> {
+    ): ResponseEntity<Int> {
         val updatedResource = apiResourceService.updateResourceStatus(id, activeStatus, selector)
         return ResponseEntity(updatedResource, HttpStatus.OK)
     }
@@ -171,15 +171,15 @@ class ApiResourceController(
     fun batchDelete(
         @RequestParam selector: Int,
         @RequestBody ids: List<String>
-    ): ResponseEntity<Int> {
-        val count = apiResourceService.batchDelete(ids, selector)
-        return ResponseEntity(count, HttpStatus.OK)
+    ): ResponseEntity<Boolean> {
+        val result = apiResourceService.batchDelete(ids, selector)
+        return ResponseEntity(result, HttpStatus.OK)
     }
 
     /**
      * 搜索资源
      */
-    @GetMapping("/search")
+    @PostMapping("/search")
     fun searchResources(
         @RequestParam selector: Int,
         @RequestParam query: String
@@ -191,18 +191,18 @@ class ApiResourceController(
     /**
      * 获取可用的父节点列表（用于下拉框选择）
      */
-    @GetMapping("/parents")
+    @PostMapping("/parents")
     fun getAvailableParents(
         @RequestParam selector: Int,
-        @RequestParam(required = false) excludeId: String? = null
     ): ResponseEntity<List<Map<String, Any>>> {
-        val parents = apiResourceService.getAvailableParents(selector, excludeId)
+        val parents = apiResourceService.getAvailableParents(selector)
         // 转换为前端下拉框友好的格式
         val result = parents.map {
             mapOf(
                 "value" to it.key,
                 "label" to it.data.title,
-                "path" to it.nodePath
+                "path" to it.nodePath,
+                "sort" to it.sort,
             )
         }
         return ResponseEntity(result, HttpStatus.OK)

@@ -18,25 +18,25 @@
     <select id="findByParentId" resultMap="BaseResultMap">
         SELECT *
         FROM api_resource_${tableSelector}
-        WHERE parent_id = #{parentId}
-        ORDER BY sort
+        WHERE "parent_id" = #{parentId}
+        ORDER BY "sort"
     </select>
 
     <!-- 查找所有根节点（没有父节点的节点） -->
     <select id="findRoots" resultMap="BaseResultMap">
         SELECT *
         FROM api_resource_${tableSelector}
-        WHERE parent_id IS NULL
-           OR parent_id = ''
-        ORDER BY sort
+        WHERE "parent_id" IS NULL
+           OR "parent_id" = ''
+        ORDER BY "sort"
     </select>
 
     <!-- 根据路径查询 -->
     <select id="findByPathStartsWith" resultMap="BaseResultMap">
         SELECT *
         FROM api_resource_${tableSelector}
-        WHERE node_path LIKE CONCAT(#{path}, '%')
-        ORDER BY sort
+        WHERE "node_path" LIKE CONCAT(#{path}, '%')
+        ORDER BY "sort"
     </select>
 
     <!-- 查询指定表中的所有记录 -->

@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 import axios from 'axios'
+import {deleteResource, getDifferences, getResourceTree, updateResource} from '@/api/resource'
 
 Vue.use(Vuex)
 
@@ -58,9 +59,7 @@ export default new Vuex.Store({
         // 加载源表资源
         async loadSourceResources({commit, state, dispatch}) {
             try {
-                const response = await axios.get('/resources/tree', {
-                    params: {selector: state.sourceSelector}
-                })
+                const response = await getResourceTree(state.sourceSelector)
                 commit('SET_SOURCE_RESOURCES', response.data)
                 dispatch('loadDifferences')
             } catch (error) {
@@ -71,9 +70,7 @@ export default new Vuex.Store({
         // 加载目标表资源
         async loadTargetResources({commit, state, dispatch}) {
             try {
-                const response = await axios.get('/resources/tree', {
-                    params: {selector: state.targetSelector}
-                })
+                const response = await getResourceTree(state.targetSelector)
                 commit('SET_TARGET_RESOURCES', response.data)
                 dispatch('loadDifferences')
             } catch (error) {
@@ -85,12 +82,7 @@ export default new Vuex.Store({
         async loadDifferences({commit, state}) {
             if (state.sourceResources.length && state.targetResources.length) {
                 try {
-                    const response = await axios.get('/resources/getDifferences', {
-                        params: {
-                            sourceSelector: state.sourceSelector,
-                            targetSelector: state.targetSelector
-                        }
-                    })
+                    const response = await getDifferences(state.sourceSelector, state.targetSelector)
                     commit('SET_DIFFERENCES', response.data)
                 } catch (error) {
                     console.error('加载差异数据失败:', error)
@@ -121,9 +113,7 @@ export default new Vuex.Store({
         // 更新资源
         async updateResource({dispatch}, {resource, selector}) {
             try {
-                await axios.post(`/resources/${resource.key}`, resource, {
-                    params: {selector}
-                })
+                await updateResource(resource.key, resource, selector)
 
                 // 重新加载数据
                 if (selector === this.state.sourceSelector) {
@@ -139,7 +129,29 @@ export default new Vuex.Store({
         // 创建资源
         async createResource({dispatch}, {resource, selector}) {
             try {
-                await axios.post('/resources', resource, {
+                // 创建资源对象的副本，避免修改原对象
+                const resourceToSend = {...resource}
+
+                // 移除relativeSortIndex字段，后端API可能不需要这个字段
+                if ('relativeSortIndex' in resourceToSend) {
+                    // 如果sort值为0且存在relativeSortIndex，使用relativeSortIndex作为sort值
+                    if (resourceToSend.sort === 0 && resourceToSend.relativeSortIndex) {
+                        resourceToSend.sort = resourceToSend.relativeSortIndex
+                    }
+                    delete resourceToSend.relativeSortIndex
+                }
+
+                // 确保sort字段有值
+                if (!resourceToSend.sort && resourceToSend.sort !== 0) {
+                    resourceToSend.sort = 1 // 默认值
+                }
+
+                // 确保sort值大于0
+                if (resourceToSend.sort <= 0) {
+                    resourceToSend.sort = 1
+                }
+
+                await axios.post('/resources', resourceToSend, {
                     params: {selector}
                 })
 
@@ -157,9 +169,7 @@ export default new Vuex.Store({
         // 删除资源
         async deleteResource({dispatch}, {id, selector}) {
             try {
-                await axios.delete(`/resources/${id}`, {
-                    params: {selector}
-                })
+                await deleteResource(id, selector)
 
                 // 重新加载数据
                 if (selector === this.state.sourceSelector) {
