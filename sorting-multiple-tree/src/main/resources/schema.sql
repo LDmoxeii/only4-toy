@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS api_resource_1
     title         VARCHAR(100),
     en_title      VARCHAR(100),
     show_status   BOOLEAN DEFAULT TRUE,
-    active_status BOOLEAN DEFAULT TRUE
+    active_status BOOLEAN DEFAULT TRUE,
+    deleted       BOOLEAN DEFAULT FALSE
     );
 
 -- API资源表_2
@@ -47,5 +48,6 @@ CREATE TABLE IF NOT EXISTS api_resource_2
     title         VARCHAR(100),
     en_title      VARCHAR(100),
     show_status   BOOLEAN DEFAULT TRUE,
-    active_status BOOLEAN DEFAULT TRUE
+    active_status BOOLEAN DEFAULT TRUE,
+    deleted       BOOLEAN DEFAULT FALSE
     );

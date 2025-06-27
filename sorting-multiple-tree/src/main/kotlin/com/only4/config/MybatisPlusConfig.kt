@@ -29,6 +29,7 @@ class MybatisPlusConfig(
             tableNameHandlerMap[tableName]?.dynamicTableName(sql, tableName) ?: tableName
         }
 
+        // 添加动态表名插件
         val dynamicTableNameInnerInterceptor = DynamicTableNameInnerInterceptor(dispatchHandler)
         interceptor.addInnerInterceptor(dynamicTableNameInnerInterceptor)
 

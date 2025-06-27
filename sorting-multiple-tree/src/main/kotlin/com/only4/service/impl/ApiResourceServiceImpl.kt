@@ -8,6 +8,7 @@ import com.only4.entity.ApiResourceTree
 import com.only4.mapper.ApiResourceMapper
 import com.only4.service.ApiResourceService
 import com.only4.synchronizer.SortingTreeSynchronizer
+import com.only4.synchronizer.SortingTreeSynchronizer.SyncResult
 import com.only4.tree.SortingMultipleTree
 import com.only4.tree.SortingTreeNode
 import org.springframework.stereotype.Service
@@ -42,39 +43,9 @@ class ApiResourceServiceImpl(
         try {
             // 设置目标表选择器
             ApiResourceTableNameHandler.setTableSelector(targetSelector)
-
-
-            SortingTreeSynchronizer.SyncType.ADD
-            // 遍历所有同步结果
-            for (syncResult in targetTree) {
-                when (syncResult.syncType) {
-                    SortingTreeSynchronizer.SyncType.ADD -> {
-                        // 处理添加操作
-                        val node = syncResult.node
-                        if (node is ApiResource) {
-                            saveOrUpdate(node)
-                        }
-                    }
-
-                    SortingTreeSynchronizer.SyncType.UPDATE -> {
-                        // 处理更新操作
-                        val node = syncResult.node
-                        if (node is ApiResource) {
-                            saveOrUpdate(node)
-                        }
-                    }
-
-                    SortingTreeSynchronizer.SyncType.DELETE -> {
-                        // 处理删除操作
-                        val nodeKey = syncResult.node.key
-                        // 从数据库中删除
-
-                        removeById(nodeKey)
-                    }
-
-                    SortingTreeSynchronizer.SyncType.SAME -> continue
-                }
-            }
+            val (deleted, updated) = targetTree.flattenTree().map { it as ApiResource }.partition { it.deleted }
+            removeBatchByIds(deleted)
+            saveOrUpdateBatch(updated)
         } finally {
             // 清理线程变量
             ApiResourceTableNameHandler.clear()
@@ -115,17 +86,12 @@ class ApiResourceServiceImpl(
     override fun deleteResource(key: String): Boolean {
         // 获取当前树
         val resource = getById(key) ?: return true
-        val originalTree = getTree(resource.parentKey)
         val tree = getTree(resource.parentKey)
 
         tree.removeNode(key)
-        val deletedKey = originalTree.flattenTree()
-            .filter { tree.findNodeByKey(it.key) == null }
-            .map { it.key }
-        // 删除数据库中的资源
-        removeByIds(deletedKey)
+
         // 更新顺序
-        saveOrUpdateBatch(tree.flattenTree().map { it as ApiResource })
+        removeBatchByIds(tree.flattenTree().map { it as ApiResource }.filter { it.deleted })
 
         return false
     }
@@ -192,7 +158,7 @@ class ApiResourceServiceImpl(
     override fun calculateDifferences(
         sourceTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
         targetTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>
-    ): List<SortingTreeSynchronizer.SyncResult<String, ApiResource.ApiResourceInfo>> {
+    ): List<SyncResult<String, ApiResource.ApiResourceInfo>> {
         return apiResourceSynchronizer.calculateDifferences(sourceTree, targetTree)
     }
 
@@ -200,7 +166,7 @@ class ApiResourceServiceImpl(
         sourceTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
         targetTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
         resources: Set<String>
-    ): List<SortingTreeSynchronizer.SyncResult<String, ApiResource.ApiResourceInfo>> {
+    ): List<SyncResult<String, ApiResource.ApiResourceInfo>> {
         return apiResourceSynchronizer.synchronizeTrees(sourceTree, targetTree, resources)
     }
 

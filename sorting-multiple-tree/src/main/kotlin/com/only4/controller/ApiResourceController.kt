@@ -109,7 +109,10 @@ class ApiResourceController(
         )
 
         // 将同步结果应用到数据库
-        apiResourceService.applySyncResults(targetTree, targetSelector)
+        apiResourceService.applySyncResults(
+            targetTree,
+            targetSelector
+        )
 
         return ResponseEntity(
             "Resources synchronized successfully. ${syncResults.size} changes applied.",

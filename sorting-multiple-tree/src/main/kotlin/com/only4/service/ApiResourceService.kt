@@ -9,7 +9,8 @@ interface ApiResourceService {
     fun getTree(rootKey: String = ""): SortingMultipleTree<String, ApiResource.ApiResourceInfo>
 
     fun applySyncResults(
-        targetTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>, targetSelector: Int
+        targetTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
+        targetSelector: Int
     )
 
     /**

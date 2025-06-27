@@ -21,6 +21,9 @@ class ApiResource() : SortingTreeNode<String, ApiResource.ApiResourceInfo> {
     @TableField
     override var sort: Long = 0L
 
+    @TableField("deleted")
+    var deleted: Boolean = false
+
     @TableField(exist = false)
     override var data: ApiResourceInfo = ApiResourceInfo()
 
@@ -71,6 +74,7 @@ class ApiResource() : SortingTreeNode<String, ApiResource.ApiResourceInfo> {
         this.nodePath = nodePath
         this.sort = sort
         this.data = data
+        this.deleted = false
     }
 
     data class ApiResourceInfo(
@@ -82,7 +86,7 @@ class ApiResource() : SortingTreeNode<String, ApiResource.ApiResourceInfo> {
 }
 
 class ApiResourceTree(
-    val dummyRoot: ApiResource = ApiResource(
+    private val dummyRoot: ApiResource = ApiResource(
         key = "",
         parentKey = "",
         nodePath = "",
@@ -175,13 +179,14 @@ class ApiResourceTree(
         sort: Long?
     ): SortingTreeNode<String, ApiResource.ApiResourceInfo> {
         // 检查键是否已存在
-        require(!nodeMap.containsKey(key)) { "Node with key $key already exists" }
+        require(((nodeMap[key] as ApiResource?)?.deleted ?: true)) { "Node with key $key already exists" }
 
         // 获取下一个可用的排序索引
         val nextAvailableIndex = calculateNextSort(parentKey)
 
         // 如果指定的排序号大于下一个可用的排序索引，则使用下一个可用的排序索引
-        val actualSortIndex = if (sort == null || sort > nextAvailableIndex) nextAvailableIndex else sort
+        val actualSortIndex =
+            if (sort == null || sort % sortBase > nextAvailableIndex) nextAvailableIndex else sort % sortBase
 
         // 获取父节点排序值
         val parentSort = findNodeByKey(parentKey)?.sort ?: dummyRoot.sort
@@ -215,7 +220,9 @@ class ApiResourceTree(
             }
 
             // 删除当前节点
-            nodeMap.remove(node.key)
+            if (node is ApiResource) {
+                node.deleted = true
+            }
 
             // 从父子映射中删除
             val parentKey = node.parentKey

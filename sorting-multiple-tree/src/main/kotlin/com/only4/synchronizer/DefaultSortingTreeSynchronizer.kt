@@ -147,7 +147,7 @@ class DefaultSortingTreeSynchronizer<K, V>(
         val differencesByType = syncResults.groupBy { it.syncType }
 
         // 1. 处理添加
-        differencesByType[SortingTreeSynchronizer.SyncType.ADD]?.forEach { result ->
+        differencesByType[SortingTreeSynchronizer.SyncType.ADD]?.sortedBy { it.node.sort }?.forEach { result ->
             processAddNode(result.node, sourceTree, targetTree, processedResults)
         }
 
@@ -157,7 +157,7 @@ class DefaultSortingTreeSynchronizer<K, V>(
         }
 
         // 3. 处理删除
-        differencesByType[SortingTreeSynchronizer.SyncType.DELETE]?.forEach { result ->
+        differencesByType[SortingTreeSynchronizer.SyncType.DELETE]?.sortedBy { -it.node.sort }?.forEach { result ->
             processDeleteNode(result.node, targetTree).also { processedResults.add(it) }
         }
 
