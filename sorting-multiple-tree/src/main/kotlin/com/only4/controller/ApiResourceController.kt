@@ -202,7 +202,7 @@ class ApiResourceController(
     /**
      * 更新资源状态（启用/停用）
      */
-    @PatchMapping("/{key}/status")
+    @PostMapping("/{key}/status")
     fun updateResourceStatus(
         @PathVariable key: String,
         @RequestParam selector: Int,

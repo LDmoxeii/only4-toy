@@ -22,10 +22,10 @@ class ApiResourceServiceImpl(
             // 如果没有指定根节点，则获取所有资源
             return ApiResourceTree.buildFromResources(resources = this.list())
         }
-        val root = getById(rootKey)
+        val root = getById(rootKey) ?: throw IllegalArgumentException("Resource with id $rootKey not found")
         val descendants = this.list(
             QueryWrapper<ApiResource>()
-                .likeLeft("nodePath", root.nodePath)
+                .likeLeft("node_path", root.nodePath)
         ).filter { it.nodePath != root.nodePath }
 
         return ApiResourceTree.buildFromResources(
@@ -115,7 +115,7 @@ class ApiResourceServiceImpl(
      */
     override fun deleteResource(key: String): Boolean {
         // 获取当前树
-        val resource = getById(key)
+        val resource = getById(key) ?: return true
         val originalTree = getTree(resource.parentKey)
         val tree = originalTree
 
@@ -210,7 +210,7 @@ class ApiResourceServiceImpl(
         // 获取当前树
         if (resource.parentKey == target["parentKey"]) {
             val tree = getTree(resource.parentKey)
-            tree.moveNode(resource, target["parentKey"] as String, target["sort"] as Long)
+            tree.moveNode(resource, target["parentKey"] as String, (target["sort"] as Int).toLong())
             saveOrUpdateBatch(tree.flattenTree().map { it as ApiResource })
             return
         }
@@ -219,7 +219,7 @@ class ApiResourceServiceImpl(
 
         // 移动节点
         sourceTree.removeNode(key)
-        targetTree.addNode(key, target["parentKey"] as String, resource.data, target["sort"] as Long)
+        targetTree.addNode(key, target["parentKey"] as String, resource.data, (target["sort"] as Int).toLong())
 
         // 更新顺序
         removeById(key)
