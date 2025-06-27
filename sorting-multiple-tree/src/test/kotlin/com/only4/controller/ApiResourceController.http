@@ -106,3 +106,13 @@ POST http://localhost:8989/api/resources/search?
 ### 获取可用的父节点列表
 POST http://localhost:8989/api/resources/parents?
     selector=1
+
+###
+POST http://localhost:8989/api/resources/move/{{key}}?
+    selector=1
+Content-Type: application/json
+
+{
+  "parentKey": "api-1",
+  "sort": 4
+}

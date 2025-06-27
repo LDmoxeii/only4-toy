@@ -57,4 +57,6 @@ interface ApiResourceService {
         targetTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
         resources: List<String>
     ): List<SyncResult<String, ApiResource.ApiResourceInfo>>
+
+    fun moveNode(key: String, target: Map<String, Any>)
 }

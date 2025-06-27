@@ -180,14 +180,14 @@ class ApiResourceServiceImpl(
      * 获取可用的父节点列表
      */
     override fun getAvailableParents(rootKey: String): List<SortingTreeNode<String, ApiResource.ApiResourceInfo>> {
-            // 获取当前树
+        // 获取当前树
         val tree = getTree(rootKey)
 
-            // 获取所有节点
-            val allNodes = tree.flattenTree()
+        // 获取所有节点
+        val allNodes = tree.flattenTree()
 
-            return allNodes.map { it as ApiResource }
-                .filter { it.activeStatus }
+        return allNodes.map { it as ApiResource }
+            .filter { it.activeStatus }
     }
 
     override fun calculateDifferences(
@@ -203,5 +203,27 @@ class ApiResourceServiceImpl(
         resources: List<String>
     ): List<SortingTreeSynchronizer.SyncResult<String, ApiResource.ApiResourceInfo>> {
         return apiResourceSynchronizer.synchronizeTrees(sourceTree, targetTree)
+    }
+
+    override fun moveNode(key: String, target: Map<String, Any>) {
+        val resource = getById(key) ?: throw IllegalArgumentException("Resource with id $key not found")
+        // 获取当前树
+        if (resource.parentKey == target["parentKey"]) {
+            val tree = getTree(resource.parentKey)
+            tree.moveNode(resource, target["parentKey"] as String, target["sort"] as Long)
+            saveOrUpdateBatch(tree.flattenTree().map { it as ApiResource })
+            return
+        }
+        val sourceTree = getTree(resource.parentKey)
+        val targetTree = getTree(target["parentKey"] as String)
+
+        // 移动节点
+        sourceTree.removeNode(key)
+        targetTree.addNode(key, target["parentKey"] as String, resource.data, target["sort"] as Long)
+
+        // 更新顺序
+        removeById(key)
+        saveOrUpdateBatch(sourceTree.flattenTree().map { it as ApiResource })
+        saveOrUpdateBatch(targetTree.flattenTree().map { it as ApiResource })
     }
 }

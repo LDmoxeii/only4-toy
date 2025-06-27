@@ -22,7 +22,7 @@ class ApiResourceServiceImplTest {
     private var mapper: ObjectMapper = ObjectMapper()
 
     init {
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
     }
 
@@ -617,5 +617,274 @@ class ApiResourceServiceImplTest {
         // 验证
         verify(apiResourceSynchronizer).synchronizeTrees(sourceTree, targetTree)
         assertEquals(expectedResults, result)
+    }
+
+    @Test
+    fun `test moveNode should move resource from source tree to target tree`() {
+        val keyToMove = "resource1"
+
+        // 待移动的资源
+        val resource = mapper.readValue(
+            """
+            {
+                "key": "resource1",
+                "parentKey": "sourceParent",
+                "nodePath": "sourceParent/resource1",
+                "sort": 101,
+                "data": {
+                    "title": "Resource 1",
+                    "enTitle": "Resource 1 EN",
+                    "showStatus": true,
+                    "activeStatus": true
+                }
+            }
+            """.trimIndent(), ApiResource::class.java
+        )
+
+        // 源树资源
+        val sourceTreeResources = mapper.readValue(
+            """
+            [
+                {
+                    "key": "sourceParent",
+                    "parentKey": "",
+                    "nodePath": "sourceParent",
+                    "sort": 1,
+                    "data": {
+                        "title": "Source Parent",
+                        "enTitle": "Source Parent EN",
+                        "showStatus": true,
+                        "activeStatus": true
+                    }
+                },
+                {
+                    "key": "resource1",
+                    "parentKey": "sourceParent",
+                    "nodePath": "sourceParent/resource1",
+                    "sort": 101,
+                    "data": {
+                        "title": "Resource 1",
+                        "enTitle": "Resource 1 EN",
+                        "showStatus": true,
+                        "activeStatus": true
+                    }
+                },
+                {
+                    "key": "resource2",
+                    "parentKey": "sourceParent",
+                    "nodePath": "sourceParent/resource2",
+                    "sort": 102,
+                    "data": {
+                        "title": "Resource 2",
+                        "enTitle": "Resource 2 EN",
+                        "showStatus": true,
+                        "activeStatus": true
+                    }
+                }
+            ]
+            """.trimIndent(), object : TypeReference<List<ApiResource>>() {}
+        )
+
+        // 目标树资源
+        val targetTreeResources = mapper.readValue(
+            """
+            [
+                {
+                    "key": "targetParent",
+                    "parentKey": "",
+                    "nodePath": "targetParent",
+                    "sort": 2,
+                    "data": {
+                        "title": "Target Parent",
+                        "enTitle": "Target Parent EN",
+                        "showStatus": true,
+                        "activeStatus": true
+                    }
+                },
+                {
+                    "key": "resource3",
+                    "parentKey": "targetParent",
+                    "nodePath": "targetParent/resource3",
+                    "sort": 201,
+                    "data": {
+                        "title": "Resource 3",
+                        "enTitle": "Resource 3 EN",
+                        "showStatus": true,
+                        "activeStatus": true
+                    }
+                }
+            ]
+            """.trimIndent(), object : TypeReference<List<ApiResource>>() {}
+        )
+
+        // 创建源树和目标树
+        val sourceTree = ApiResourceTree.buildFromResources(resources = sourceTreeResources)
+        val targetTree = ApiResourceTree.buildFromResources(resources = targetTreeResources)
+
+        // 移动目标
+        val targetMap = mapOf(
+            "parentKey" to "targetParent",
+            "sort" to 202L
+        )
+
+        // 准备
+        doReturn(resource).`when`(target).getById(keyToMove)
+        doReturn(sourceTree).`when`(target).getTree("sourceParent")
+        doReturn(targetTree).`when`(target).getTree("targetParent")
+        doReturn(true).`when`(target).removeById(anyString())
+        doReturn(true).`when`(target).saveOrUpdateBatch(anyList<ApiResource>())
+
+        // 执行
+        target.moveNode(keyToMove, targetMap)
+
+        // 验证
+        verify(target).getById(keyToMove)
+        verify(target).getTree("sourceParent")
+        verify(target).getTree("targetParent")
+        verify(target).removeById(keyToMove)
+
+        // 验证两次批量保存操作
+        verify(target, times(2)).saveOrUpdateBatch(apiResourceListCaptor.capture())
+
+        // 获取捕获的参数
+        val capturedLists = apiResourceListCaptor.allValues
+        assertEquals(2, capturedLists.size) // 应该有两次批量保存
+
+        // 验证第一次保存是源树的所有节点（不包含被移动的节点）
+        val firstSavedList = capturedLists[0]
+        assertEquals(2, firstSavedList.size) // sourceParent 和 resource2
+        assertFalse(firstSavedList.any { it.key == keyToMove })
+
+        // 验证第二次保存是目标树的所有节点（包含被移动的节点）
+        val secondSavedList = capturedLists[1]
+        assertTrue(secondSavedList.any { it.key == keyToMove })
+        assertEquals(3, secondSavedList.size) // targetParent, resource3 和移动后的 resource1
+    }
+
+    @Test
+    fun `test moveNode with same parent but different sort should update order`() {
+        val keyToMove = "resource1"
+
+        // 待移动的资源
+        val resource = mapper.readValue(
+            """
+            {
+                "key": "resource1",
+                "parentKey": "parent",
+                "nodePath": "parent/resource1",
+                "sort": 101,
+                "data": {
+                    "title": "Resource 1",
+                    "enTitle": "Resource 1 EN",
+                    "showStatus": true,
+                    "activeStatus": true
+                }
+            }
+            """.trimIndent(), ApiResource::class.java
+        )
+
+        // 树资源
+        val treeResources = mapper.readValue(
+            """
+            [
+                {
+                    "key": "parent",
+                    "parentKey": "",
+                    "nodePath": "parent",
+                    "sort": 1,
+                    "data": {
+                        "title": "Parent",
+                        "enTitle": "Parent EN",
+                        "showStatus": true,
+                        "activeStatus": true
+                    }
+                },
+                {
+                    "key": "resource1",
+                    "parentKey": "parent",
+                    "nodePath": "parent/resource1",
+                    "sort": 101,
+                    "data": {
+                        "title": "Resource 1",
+                        "enTitle": "Resource 1 EN",
+                        "showStatus": true,
+                        "activeStatus": true
+                    }
+                },
+                {
+                    "key": "resource2",
+                    "parentKey": "parent",
+                    "nodePath": "parent/resource2",
+                    "sort": 102,
+                    "data": {
+                        "title": "Resource 2",
+                        "enTitle": "Resource 2 EN",
+                        "showStatus": true,
+                        "activeStatus": true
+                    }
+                },
+                {
+                    "key": "resource3",
+                    "parentKey": "parent",
+                    "nodePath": "parent/resource3",
+                    "sort": 103,
+                    "data": {
+                        "title": "Resource 3",
+                        "enTitle": "Resource 3 EN",
+                        "showStatus": true,
+                        "activeStatus": true
+                    }
+                }
+            ]
+            """.trimIndent(), object : TypeReference<List<ApiResource>>() {}
+        )
+
+        // 创建树
+        val tree = ApiResourceTree.buildFromResources(resources = treeResources)
+
+        // 移动目标 - 相同父节点但不同排序
+        val targetMap = mapOf(
+            "parentKey" to "parent",
+            "sort" to 4L // 移到最后
+        )
+
+        // 准备
+        doReturn(resource).`when`(target).getById(keyToMove)
+        doReturn(tree).`when`(target).getTree("parent") // 源树和目标树相同
+        doReturn(true).`when`(target).saveOrUpdateBatch(anyList<ApiResource>())
+
+        // 执行
+        target.moveNode(keyToMove, targetMap)
+
+        // 验证
+        verify(target).getById(keyToMove)
+        verify(target).getTree("parent")
+
+        verify(target).saveOrUpdateBatch(apiResourceListCaptor.capture())
+    }
+
+    @Test
+    fun `test moveNode should throw exception when resource not found`() {
+        val keyToMove = "nonexistent"
+
+        // 移动目标
+        val targetMap = mapOf(
+            "parentKey" to "targetParent",
+            "sort" to 1L
+        )
+
+        // 准备
+        doReturn(null).`when`(target).getById(keyToMove)
+
+        // 执行 & 验证
+        val exception = assertThrows(IllegalArgumentException::class.java) {
+            target.moveNode(keyToMove, targetMap)
+        }
+
+        assertEquals("Resource with id $keyToMove not found", exception.message)
+        verify(target).getById(keyToMove)
+        verify(target, never()).getTree(anyString())
+        verify(target, never()).removeById(anyString())
+        verify(target, never()).saveOrUpdateBatch(anyList<ApiResource>())
     }
 }

@@ -186,7 +186,7 @@ class ApiResourceController(
     fun deleteResource(
         @PathVariable key: String,
         @RequestParam selector: Int
-    ): ResponseEntity<Void> {
+    ): ResponseEntity<Unit> {
         try {
             // 设置表选择器
             ApiResourceTableNameHandler.setTableSelector(selector)
@@ -278,6 +278,30 @@ class ApiResourceController(
                 )
             }
             return ResponseEntity(result, HttpStatus.OK)
+        } finally {
+            // 清理线程变量
+            ApiResourceTableNameHandler.clear()
+        }
+    }
+
+    /**
+     * 节点移动保存
+     *
+     * @param key 节点的唯一标识符
+     * @param selector 表选择器，用于区分不同的资源表
+     * @param target 目标节点信息，包含父节点和排序等信息
+     */
+    @PostMapping("/move/{key}")
+    fun moveNode(
+        @PathVariable key: String,
+        @RequestParam selector: Int,
+        @RequestBody target: Map<String, Any>
+    ): ResponseEntity<Unit> {
+        try {
+            // 设置表选择器
+            ApiResourceTableNameHandler.setTableSelector(selector)
+            apiResourceService.moveNode(key, target)
+            return ResponseEntity(HttpStatus.OK)
         } finally {
             // 清理线程变量
             ApiResourceTableNameHandler.clear()
