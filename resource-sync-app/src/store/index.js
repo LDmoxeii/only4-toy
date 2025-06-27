@@ -1,7 +1,14 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import axios from 'axios'
-import {deleteResource, getDifferences, getResourceTree, updateResource} from '@/api/resource'
+import {
+    deleteResource,
+    getDifferences,
+    getResourceTree,
+    updateResource,
+    updateResourceStatus,
+    syncResources as apiSyncResources,
+    createResource as apiCreateResource
+} from '@/api/resource'
 
 Vue.use(Vuex)
 
@@ -95,12 +102,11 @@ export default new Vuex.Store({
             if (state.selectedResources.length === 0) return
 
             try {
-                await axios.post('/resources/sync', state.selectedResources, {
-                    params: {
-                        sourceSelector: state.sourceSelector,
-                        targetSelector: state.targetSelector
-                    }
-                })
+                await apiSyncResources(
+                    state.selectedResources,
+                    state.sourceSelector,
+                    state.targetSelector
+                )
 
                 // 重新加载数据
                 this.dispatch('loadTargetResources')
@@ -151,9 +157,7 @@ export default new Vuex.Store({
                     resourceToSend.sort = 1
                 }
 
-                await axios.post('/resources', resourceToSend, {
-                    params: {selector}
-                })
+                await apiCreateResource(resourceToSend, selector)
 
                 // 重新加载数据
                 if (selector === this.state.sourceSelector) {
@@ -185,12 +189,7 @@ export default new Vuex.Store({
         // 更新资源状态
         async updateResourceStatus({dispatch}, {id, activeStatus, selector}) {
             try {
-                await axios.patch(`/resources/${id}/status`, {}, {
-                    params: {
-                        selector,
-                        activeStatus
-                    }
-                })
+                await updateResourceStatus(id, activeStatus, selector)
 
                 // 重新加载数据
                 if (selector === this.state.sourceSelector) {
@@ -208,12 +207,12 @@ export default new Vuex.Store({
             if (state.selectedResources.length === 0) return
 
             try {
-                await axios.patch('/resources/batch/status', state.selectedResources, {
-                    params: {
-                        selector,
-                        activeStatus
-                    }
-                })
+                // 逐个更新每个资源的状态
+                const updatePromises = state.selectedResources.map(resourceKey =>
+                    updateResourceStatus(resourceKey, activeStatus, selector)
+                )
+
+                await Promise.all(updatePromises)
 
                 // 重新加载数据
                 if (selector === state.sourceSelector) {

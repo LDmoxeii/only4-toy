@@ -96,7 +96,7 @@ class ApiResourceController(
     fun syncResources(
         @RequestParam sourceSelector: Int,
         @RequestParam targetSelector: Int,
-        @RequestBody resources: List<String>
+        @RequestBody resources: Set<String>
     ): ResponseEntity<String> {
         // 获取源和目标表树
         val (sourceTree, targetTree) = getSourceAndTargetTrees(sourceSelector, targetSelector)
@@ -109,7 +109,7 @@ class ApiResourceController(
         )
 
         // 将同步结果应用到数据库
-        apiResourceService.applySyncResults(syncResults, targetSelector)
+        apiResourceService.applySyncResults(targetTree, targetSelector)
 
         return ResponseEntity(
             "Resources synchronized successfully. ${syncResults.size} changes applied.",
@@ -124,7 +124,7 @@ class ApiResourceController(
     fun previewSync(
         @RequestParam sourceSelector: Int,
         @RequestParam targetSelector: Int,
-        @RequestBody resources: List<String>
+        @RequestBody resources: Set<String>
     ): ResponseEntity<List<SyncResult<String, ApiResource.ApiResourceInfo>>> {
         // 获取源和目标表树
         val (sourceTree, targetTree) = getSourceAndTargetTrees(sourceSelector, targetSelector)

@@ -54,7 +54,7 @@
                 type="warning"
                 icon="el-icon-close"
                 :disabled="selectedResources.length === 0"
-                @click="batchUpdateStatus(sourceSelector, false)"
+                @click="handleBatchUpdateStatus(sourceSelector, false)"
             >
               停用
             </el-button>
@@ -63,7 +63,7 @@
                 type="success"
                 icon="el-icon-check"
                 :disabled="selectedResources.length === 0"
-                @click="batchUpdateStatus(sourceSelector, true)"
+                @click="handleBatchUpdateStatus(sourceSelector, true)"
             >
               启用
             </el-button>
@@ -77,8 +77,9 @@
               :show-action-buttons="true"
               :selector="sourceSelector"
               @edit-node="editResource($event, sourceSelector)"
-              @delete-node="deleteResource($event.key, sourceSelector)"
-              @toggle-status="updateResourceStatus($event, sourceSelector)"
+              @delete-node="handleDeleteResource($event, sourceSelector)"
+              @toggle-status="handleToggleStatus($event, sourceSelector)"
+              @node-move="(node, parentKey, sort) => handleMoveNode(node, parentKey, sort, sourceSelector)"
               @check-change="handleCheckChange"
           />
         </div>
@@ -102,7 +103,7 @@
                 type="warning"
                 icon="el-icon-close"
                 :disabled="selectedResources.length === 0"
-                @click="batchUpdateStatus(targetSelector, false)"
+                @click="handleBatchUpdateStatus(targetSelector, false)"
             >
               停用
             </el-button>
@@ -111,7 +112,7 @@
                 type="success"
                 icon="el-icon-check"
                 :disabled="selectedResources.length === 0"
-                @click="batchUpdateStatus(targetSelector, true)"
+                @click="handleBatchUpdateStatus(targetSelector, true)"
             >
               启用
             </el-button>
@@ -125,8 +126,9 @@
               :show-action-buttons="true"
               :selector="targetSelector"
               @edit-node="editResource($event, targetSelector)"
-              @delete-node="deleteResource($event.key, targetSelector)"
-              @toggle-status="updateResourceStatus($event, targetSelector)"
+              @delete-node="handleDeleteResource($event, targetSelector)"
+              @toggle-status="handleToggleStatus($event, targetSelector)"
+              @node-move="(node, parentKey, sort) => handleMoveNode(node, parentKey, sort, targetSelector)"
               @check-change="handleCheckChange"
           />
         </div>
@@ -178,7 +180,7 @@
 import {mapActions, mapMutations, mapState} from 'vuex'
 import ResourceTree from '@/components/ResourceTree'
 import ResourceEditDialog from '@/components/ResourceEditDialog'
-import {previewSync, syncResources} from '@/api/resource'
+import {moveNode, previewSync, searchResources, syncResources} from '@/api/resource'
 
 export default {
   name: 'ResourceSync',
@@ -230,15 +232,24 @@ export default {
     ]),
 
     // 搜索资源
-    searchResources() {
+    async searchResources() {
       if (!this.searchQuery.trim()) {
         this.loadSourceResources()
         this.loadTargetResources()
         return
       }
 
-      // 实现搜索逻辑
-      this.$message.info('搜索功能待实现')
+      try {
+        const sourceResponse = await searchResources(this.searchQuery, this.sourceSelector)
+        const targetResponse = await searchResources(this.searchQuery, this.targetSelector)
+
+        // 使用commit直接更新状态
+        this.$store.commit('SET_SOURCE_RESOURCES', sourceResponse.data)
+        this.$store.commit('SET_TARGET_RESOURCES', targetResponse.data)
+      } catch (error) {
+        console.error('搜索失败:', error)
+        this.$message.error('搜索失败')
+      }
     },
 
     // 显示创建对话框
@@ -297,6 +308,7 @@ export default {
       }
 
       try {
+        // 传递选中资源的key列表给后端
         const response = await previewSync(
             this.selectedResources,
             this.sourceSelector,
@@ -313,6 +325,7 @@ export default {
     // 确认同步
     async confirmSync() {
       try {
+        // 传递选中资源的key列表给后端进行同步
         await syncResources(
             this.selectedResources,
             this.sourceSelector,
@@ -349,6 +362,65 @@ export default {
         'SAME': '相同'
       }
       return textMap[syncType] || syncType
+    },
+
+    // 处理状态切换
+    handleToggleStatus(resource, selector) {
+      if (!resource || !resource.key) {
+        console.error('资源ID不存在', resource);
+        this.$message.error('无法更新资源状态：资源ID不存在');
+        return;
+      }
+
+      this.updateResourceStatus({
+        id: resource.key,
+        activeStatus: resource.activeStatus,
+        selector
+      });
+    },
+
+    // 处理批量更新状态
+    handleBatchUpdateStatus(selector, activeStatus) {
+      this.batchUpdateStatus({
+        activeStatus,
+        selector
+      });
+    },
+
+    // 处理删除资源
+    handleDeleteResource(event, selector) {
+      if (!event || !event.key) {
+        console.error('删除失败：无效的资源ID', event);
+        this.$message.error('无法删除：资源ID无效');
+        return;
+      }
+
+      this.deleteResource({
+        id: event.key,
+        selector
+      });
+    },
+
+    // 移动节点
+    async handleMoveNode(node, targetParentKey, targetSort, selector) {
+      try {
+        await moveNode(node.key, {
+          parentKey: targetParentKey,
+          sort: targetSort
+        }, selector)
+
+        // 重新加载数据
+        if (selector === this.sourceSelector) {
+          this.loadSourceResources()
+        } else {
+          this.loadTargetResources()
+        }
+
+        this.$message.success('节点移动成功')
+      } catch (error) {
+        console.error('节点移动失败:', error)
+        this.$message.error('节点移动失败')
+      }
     }
   }
 }

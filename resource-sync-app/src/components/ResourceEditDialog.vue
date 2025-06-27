@@ -18,6 +18,9 @@
       <el-form-item label="英文标题" prop="enTitle">
         <el-input v-model="form.enTitle" placeholder="请输入英文标题"></el-input>
       </el-form-item>
+      <el-form-item label="节点路径" prop="nodePath" v-if="!isCreate">
+        <el-input v-model="form.nodePath" disabled></el-input>
+      </el-form-item>
       <el-form-item label="父节点" prop="parentKey">
         <el-select v-model="form.parentKey" placeholder="请选择父节点" style="width: 100%">
           <el-option label="无 (根节点)" value=""></el-option>
@@ -34,22 +37,7 @@
           </el-option>
         </el-select>
       </el-form-item>
-      <el-form-item label="排序" prop="sort">
-        <el-input-number v-model="form.relativeSortIndex" :min="0" style="width: 100%"></el-input-number>
-        <div class="sort-hint">
-          <i class="el-icon-info"></i>
-          <span v-if="!form.parentKey">排序值: {{ form.relativeSortIndex }}</span>
-          <span v-else>
-            <template v-if="getParentSort() > 0">
-              排序值: {{ getParentSort() }}{{ form.relativeSortIndex.toString().padStart(2, '0') }}
-              (父节点: {{ getParentSort() }})
-            </template>
-            <template v-else>
-              排序值: {{ form.sort }}
-            </template>
-          </span>
-        </div>
-      </el-form-item>
+
       <el-form-item label="是否显示" prop="showStatus">
         <el-switch v-model="form.showStatus"></el-switch>
       </el-form-item>
@@ -108,12 +96,12 @@ export default {
         title: '',
         enTitle: '',
         parentKey: '',
-        sort: 0,
-        relativeSortIndex: 0,
+        nodePath: '',
+        sort: 0, // 保留sort字段，但不再显示和编辑
         showStatus: true,
         activeStatus: true
       },
-      sortBase: 100,
+
       parents: [],
       rules: {
         key: [
@@ -146,11 +134,6 @@ export default {
         }
       },
       deep: true
-    },
-    'form.parentKey': {
-      handler() {
-        this.calculateRelativeSortIndex()
-      }
     }
   },
   methods: {
@@ -158,53 +141,29 @@ export default {
     initForm() {
       if (this.resource) {
         this.form = {...this.resource}
-        this.calculateRelativeSortIndex()
       }
-    },
-
-    // 计算相对排序索引
-    calculateRelativeSortIndex() {
-      const parentSort = this.getParentSort()
-      if (parentSort === 0) {
-        // 如果是顶级节点，直接返回
-        this.form.relativeSortIndex = this.form.sort
-      } else {
-        // 如果是子节点，计算与父节点的相对索引
-        this.form.relativeSortIndex = this.form.sort % this.sortBase
-      }
-    },
-
-    // 获取父节点排序值
-    getParentSort() {
-      if (!this.form.parentKey) return 0
-
-      // 从父节点列表中找到对应的父节点
-      const parent = this.parents.find(p => p.value === this.form.parentKey)
-
-      // 检查父节点是否存在且有排序值
-      if (parent && parent.sort !== undefined) {
-        // 获取父节点的基本排序值
-        const baseSort = Math.floor(parent.sort / this.sortBase) * this.sortBase
-        return baseSort / this.sortBase
-      }
-
-      // 如果无法获取父节点排序值，则从当前节点排序推算
-      if (this.form.sort > this.sortBase) {
-        // 如果当前节点排序值大于基数，推算父节点排序值
-        return Math.floor(this.form.sort / this.sortBase)
-      }
-
-      return 0
     },
 
     // 加载可用父节点
     async loadParents() {
       try {
         const response = await getAvailableParents(this.selector)
-        this.parents = response.data
 
-        // 加载完父节点后重新计算相对排序索引
-        this.calculateRelativeSortIndex()
+        // 过滤掉自己，防止循环引用
+        if (!this.isCreate && this.form.key) {
+          this.parents = response.data.filter(parent => parent.value !== this.form.key);
+
+          // 同时过滤掉自己的所有子节点，避免循环引用
+          this.parents = this.parents.filter(parent => {
+            // 如果父节点路径包含当前节点的key，说明是当前节点的子节点
+            if (parent.path && parent.path.includes('/' + this.form.key + '/')) {
+              return false;
+            }
+            return true;
+          });
+        } else {
+          this.parents = response.data;
+        }
       } catch (error) {
         console.error('加载父节点失败:', error)
         this.$message.error('加载父节点失败')
@@ -215,24 +174,11 @@ export default {
     submitForm() {
       this.$refs.form.validate((valid) => {
         if (valid) {
-          // 计算实际的sort值
+          // 创建提交数据的副本
           const submitData = {...this.form}
 
-          // 根据相对索引和父节点计算实际的sort值
-          const parentSort = this.getParentSort()
-          if (!this.form.parentKey || parentSort === 0) {
-            // 顶级节点 - 直接使用相对索引作为排序值
-            submitData.sort = this.form.relativeSortIndex || 1 // 确保不为0
-          } else {
-            // 子节点 - 父节点值*100 + 相对索引
-            const relativeIndex = this.form.relativeSortIndex || 1 // 确保不为0
-            submitData.sort = parentSort * this.sortBase + relativeIndex
-          }
-
-          // 确保排序值大于0
-          if (submitData.sort <= 0) {
-            submitData.sort = 1
-          }
+          // 创建时不需要手动设置排序，后端会自动处理
+          // 编辑时保留原有排序值
 
           this.$emit('submit', submitData)
           this.dialogVisible = false

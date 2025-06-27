@@ -148,12 +148,12 @@ class DefaultSortingTreeSynchronizer<K, V>(
 
         // 1. 处理添加
         differencesByType[SortingTreeSynchronizer.SyncType.ADD]?.forEach { result ->
-            processAddNode(result.node, sourceTree, targetTree, nodeMapByKey).also { processedResults.add(it) }
+            processAddNode(result.node, sourceTree, targetTree, processedResults)
         }
 
         // 2. 处理更新
         differencesByType[SortingTreeSynchronizer.SyncType.UPDATE]?.forEach { result ->
-            processUpdateNode(result.node, sourceTree, targetTree, nodeMapByKey).also { processedResults.add(it) }
+            processUpdateNode(result.node, sourceTree, targetTree, processedResults)
         }
 
         // 3. 处理删除
@@ -177,18 +177,16 @@ class DefaultSortingTreeSynchronizer<K, V>(
         node: SortingTreeNode<K, V>,
         sourceTree: SortingMultipleTree<K, V>,
         targetTree: SortingMultipleTree<K, V>,
-        nodeMapByKey: MutableMap<K, SortingTreeNode<K, V>>
-    ): SortingTreeSynchronizer.SyncResult<K, V> {
+        processedResults: MutableList<SortingTreeSynchronizer.SyncResult<K, V>>
+    ) {
         // 如果节点已存在（可能由其他操作的父节点递归添加），则直接返回
-        if (targetTree.findNodeByKey(node.key) != null) {
-            val existingNode = targetTree.findNodeByKey(node.key)!!
-            return SortingTreeSynchronizer.SyncResult(existingNode, SortingTreeSynchronizer.SyncType.ADD, true)
-        }
+        if (targetTree.findNodeByKey(node.key) != null) return
+
 
         // 确保父节点存在
         if (!sourceTree.isRoot(node) && targetTree.findNodeByKey(node.parentKey) == null) {
             sourceTree.findNodeByKey(node.parentKey)?.let { parent ->
-                processAddNode(parent, sourceTree, targetTree, nodeMapByKey)
+                processAddNode(parent, sourceTree, targetTree, processedResults)
             }
         }
 
@@ -198,9 +196,9 @@ class DefaultSortingTreeSynchronizer<K, V>(
         } else {
             targetTree.addNode(node.key, node.parentKey, node.data, sortIndex)
         }
-
-        nodeMapByKey[addedNode.key] = addedNode
-        return SortingTreeSynchronizer.SyncResult(addedNode, SortingTreeSynchronizer.SyncType.ADD, true)
+        processedResults.add(
+            SortingTreeSynchronizer.SyncResult(addedNode, SortingTreeSynchronizer.SyncType.ADD, true)
+        )
     }
 
     /**
@@ -210,10 +208,10 @@ class DefaultSortingTreeSynchronizer<K, V>(
         sourceNode: SortingTreeNode<K, V>,
         sourceTree: SortingMultipleTree<K, V>,
         targetTree: SortingMultipleTree<K, V>,
-        nodeMapByKey: MutableMap<K, SortingTreeNode<K, V>>
-    ): SortingTreeSynchronizer.SyncResult<K, V> {
+        processedResults: MutableList<SortingTreeSynchronizer.SyncResult<K, V>>
+    ) {
         val targetNode = targetTree.findNodeByKey(sourceNode.key)
-            ?: return SortingTreeSynchronizer.SyncResult(sourceNode, SortingTreeSynchronizer.SyncType.UPDATE, false)
+            ?: return
 
         val sourceSortIndex = getSortIndex(sourceNode.sort, sourceTree.sortBase)
         val targetSortIndex = getSortIndex(targetNode.sort, targetTree.sortBase)
@@ -223,18 +221,17 @@ class DefaultSortingTreeSynchronizer<K, V>(
         val dataChanged = !dataComparator(targetNode.data, sourceNode.data)
 
         if (!parentChanged && !sortChanged && !dataChanged) {
-            return SortingTreeSynchronizer.SyncResult(targetNode, SortingTreeSynchronizer.SyncType.UPDATE, false)
+            return
         }
 
         var finalNode = targetNode
-        var modified = false
 
         // 处理移动和排序变更
         if (parentChanged || sortChanged) {
             // 确保新的父节点存在
             if (parentChanged && !sourceTree.isRoot(sourceNode) && targetTree.findNodeByKey(sourceNode.parentKey) == null) {
                 sourceTree.findNodeByKey(sourceNode.parentKey)?.let { sourceParent ->
-                    processAddNode(sourceParent, sourceTree, targetTree, nodeMapByKey)
+                    processAddNode(sourceParent, sourceTree, targetTree, processedResults)
                 }
             }
 
@@ -245,18 +242,16 @@ class DefaultSortingTreeSynchronizer<K, V>(
             }
 
             finalNode = movedNode
-            modified = true
         }
 
         // 处理数据变更
         if (dataChanged) {
             finalNode.data = sourceNode.data
-            modified = true
         }
 
-        nodeMapByKey[finalNode.key] = finalNode
-
-        return SortingTreeSynchronizer.SyncResult(finalNode, SortingTreeSynchronizer.SyncType.UPDATE, modified)
+        processedResults.add(
+            SortingTreeSynchronizer.SyncResult(finalNode, SortingTreeSynchronizer.SyncType.UPDATE, true)
+        )
     }
 
     /**

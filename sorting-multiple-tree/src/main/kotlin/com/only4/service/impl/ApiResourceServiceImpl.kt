@@ -25,18 +25,18 @@ class ApiResourceServiceImpl(
         val root = getById(rootKey) ?: throw IllegalArgumentException("Resource with id $rootKey not found")
         val descendants = this.list(
             QueryWrapper<ApiResource>()
-                .likeLeft("node_path", root.nodePath)
+                .likeRight("node_path", root.nodePath)
         ).filter { it.nodePath != root.nodePath }
 
         return ApiResourceTree.buildFromResources(
-            rootKey = root.key,
+            root,
             resources = descendants
         )
     }
 
 
     override fun applySyncResults(
-        result: Collection<SortingTreeSynchronizer.SyncResult<String, ApiResource.ApiResourceInfo>>,
+        targetTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
         targetSelector: Int
     ) {
         try {
@@ -46,7 +46,7 @@ class ApiResourceServiceImpl(
 
             SortingTreeSynchronizer.SyncType.ADD
             // 遍历所有同步结果
-            for (syncResult in result) {
+            for (syncResult in targetTree) {
                 when (syncResult.syncType) {
                     SortingTreeSynchronizer.SyncType.ADD -> {
                         // 处理添加操作
@@ -102,10 +102,9 @@ class ApiResourceServiceImpl(
             key = resource.key,
             parentKey = resource.parentKey,
             data = resource.data,
-            sort = resource.sort
         ) as ApiResource
 
-        saveBatch(tree.flattenTree().map { it as ApiResource })
+        saveOrUpdateBatch(tree.flattenTree().map { it as ApiResource })
 
         return node
     }
@@ -117,7 +116,7 @@ class ApiResourceServiceImpl(
         // 获取当前树
         val resource = getById(key) ?: return true
         val originalTree = getTree(resource.parentKey)
-        val tree = originalTree
+        val tree = getTree(resource.parentKey)
 
         tree.removeNode(key)
         val deletedKey = originalTree.flattenTree()
@@ -200,30 +199,18 @@ class ApiResourceServiceImpl(
     override fun synchronizeTrees(
         sourceTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
         targetTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
-        resources: List<String>
+        resources: Set<String>
     ): List<SortingTreeSynchronizer.SyncResult<String, ApiResource.ApiResourceInfo>> {
-        return apiResourceSynchronizer.synchronizeTrees(sourceTree, targetTree)
+        return apiResourceSynchronizer.synchronizeTrees(sourceTree, targetTree, resources)
     }
 
     override fun moveNode(key: String, target: Map<String, Any>) {
         val resource = getById(key) ?: throw IllegalArgumentException("Resource with id $key not found")
-        // 获取当前树
-        if (resource.parentKey == target["parentKey"]) {
-            val tree = getTree(resource.parentKey)
-            tree.moveNode(resource, target["parentKey"] as String, (target["sort"] as Int).toLong())
-            saveOrUpdateBatch(tree.flattenTree().map { it as ApiResource })
-            return
-        }
-        val sourceTree = getTree(resource.parentKey)
-        val targetTree = getTree(target["parentKey"] as String)
 
-        // 移动节点
-        sourceTree.removeNode(key)
-        targetTree.addNode(key, target["parentKey"] as String, resource.data, (target["sort"] as Int).toLong())
+        val tree = getTree()
 
-        // 更新顺序
-        removeById(key)
-        saveOrUpdateBatch(sourceTree.flattenTree().map { it as ApiResource })
-        saveOrUpdateBatch(targetTree.flattenTree().map { it as ApiResource })
+        tree.moveNode(resource, target["parentKey"] as String, (target["sort"] as Int).toLong())
+
+        saveOrUpdateBatch(tree.flattenTree().map { it as ApiResource })
     }
 }

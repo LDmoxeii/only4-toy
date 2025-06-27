@@ -5,6 +5,8 @@
         node-key="key"
         :props="defaultProps"
         :expand-on-click-node="false"
+        :draggable="showActionButtons"
+        @node-drop="handleDrop"
         @node-click="handleNodeClick"
     >
       <div class="custom-tree-node" slot-scope="{ node, data }">
@@ -18,7 +20,6 @@
           ></el-checkbox>
           <span class="node-label" @dblclick="handleEditNode(data)">
             {{ data.title }}
-            <span v-if="showSortIndex" class="sort-index">({{ calculateRelativeSortIndex(data) }})</span>
           </span>
           <div class="node-actions">
             <el-tooltip content="启用/停用" placement="top" v-if="showActionButtons">
@@ -62,10 +63,6 @@ export default {
       type: Boolean,
       default: true
     },
-    showSortIndex: {
-      type: Boolean,
-      default: true
-    },
     sortBase: {
       type: Number,
       default: 100
@@ -91,6 +88,47 @@ export default {
     }
   },
   methods: {
+    // 处理节点拖放
+    handleDrop(draggingNode, dropNode, dropType, ev) {
+      const draggingData = draggingNode.data;
+      const dropData = dropNode.data;
+
+      let parentKey = '';
+      let targetSort = 1;
+
+      // 根据放置类型确定父节点和排序值
+      if (dropType === 'inner') {
+        // 放入节点内部，成为其子节点
+        parentKey = dropData.key;
+        // 如果有子节点，排在最后
+        const childCount = dropNode.childNodes.length;
+        targetSort = childCount > 0 ? childCount + 1 : 1;
+      } else {
+        // 放在节点前后
+        parentKey = dropNode.parent.data.key || '';
+
+        // 确定新位置的排序值
+        const siblings = dropNode.parent.childNodes;
+        const dropIndex = siblings.findIndex(node => node.key === dropNode.key);
+        const targetIndex = dropType === 'before' ? dropIndex : dropIndex + 1;
+
+        // 简单排序策略
+        if (siblings.length === 0 || targetIndex >= siblings.length) {
+          targetSort = 100; // 放在最后
+        } else if (targetIndex === 0) {
+          targetSort = Math.max(1, Math.floor(siblings[0].data.sort / 2)); // 放在最前
+        } else {
+          // 放在中间，取前后节点排序值的平均值
+          const prevSort = siblings[targetIndex - 1].data.sort || 1;
+          const nextSort = siblings[targetIndex].data.sort || prevSort + 10;
+          targetSort = Math.floor((prevSort + nextSort) / 2);
+        }
+      }
+
+      // 触发移动事件
+      this.$emit('node-move', draggingData, parentKey, targetSort);
+    },
+
     // 将扁平数据转换为树形结构
     transformToTreeData(resources) {
       if (!resources || resources.length === 0) return []
@@ -144,12 +182,19 @@ export default {
 
     // 处理删除
     handleDelete(data) {
+      if (!data || !data.key) {
+        console.error('删除失败：资源ID不存在', data);
+        this.$message.error('无法删除：资源ID不存在');
+        return;
+      }
+
       this.$confirm(`确认删除资源 "${data.title}"?`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.$emit('delete-node', data)
+        // 确保data.key存在且有效
+        this.$emit('delete-node', {key: data.key, data: data});
       }).catch(() => {
       })
     },
@@ -173,37 +218,6 @@ export default {
     handleCheckChange(checked, data) {
       this.$emit('check-change', {data, checked})
     },
-
-    // 计算相对排序索引
-    calculateRelativeSortIndex(node) {
-      if (!node || !node.sort) return 0
-
-      // 获取父节点和排序基数
-      const parentNode = this.findParentNode(node.key)
-      const parentSort = parentNode ? parentNode.sort : 0
-      const baseDivisor = this.sortBase || 100
-
-      // 计算相对索引
-      if (parentSort === 0) {
-        // 如果是顶级节点，直接返回
-        return node.sort
-      } else {
-        // 如果是子节点，计算与父节点的相对索引
-        return node.sort % baseDivisor
-      }
-    },
-
-    // 查找父节点
-    findParentNode(nodeKey) {
-      if (!this.resources || !nodeKey) return null
-
-      // 先找到当前节点
-      const currentNode = this.resources.find(item => item.key === nodeKey)
-      if (!currentNode || !currentNode.parentKey) return null
-
-      // 再找到父节点
-      return this.resources.find(item => item.key === currentNode.parentKey)
-    }
   }
 }
 </script>

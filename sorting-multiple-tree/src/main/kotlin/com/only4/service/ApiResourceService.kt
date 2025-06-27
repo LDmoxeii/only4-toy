@@ -9,7 +9,7 @@ interface ApiResourceService {
     fun getTree(rootKey: String = ""): SortingMultipleTree<String, ApiResource.ApiResourceInfo>
 
     fun applySyncResults(
-        result: Collection<SyncResult<String, ApiResource.ApiResourceInfo>>, targetSelector: Int
+        targetTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>, targetSelector: Int
     )
 
     /**
@@ -55,7 +55,7 @@ interface ApiResourceService {
     fun synchronizeTrees(
         sourceTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
         targetTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
-        resources: List<String>
+        resources: Set<String>
     ): List<SyncResult<String, ApiResource.ApiResourceInfo>>
 
     fun moveNode(key: String, target: Map<String, Any>)

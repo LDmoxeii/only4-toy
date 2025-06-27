@@ -81,8 +81,16 @@ class ApiResource() : SortingTreeNode<String, ApiResource.ApiResourceInfo> {
     )
 }
 
-class ApiResourceTree(override val dummyKey: String = "") :
-    AbstractSortingMultipleTree<String, ApiResource.ApiResourceInfo>(dummyKey) {
+class ApiResourceTree(
+    val dummyRoot: ApiResource = ApiResource(
+        key = "",
+        parentKey = "",
+        nodePath = "",
+        sort = 0L,
+        data = ApiResource.ApiResourceInfo()
+    ),
+) :
+    AbstractSortingMultipleTree<String, ApiResource.ApiResourceInfo>(dummyRoot.key) {
     override fun calculateNextSort(parentKey: String): Long {
         val children = parentChildMap[parentKey] ?: return 1L
 
@@ -98,12 +106,9 @@ class ApiResourceTree(override val dummyKey: String = "") :
      * 生成节点路径
      */
     private fun generateNodePath(key: String, parentKey: String): String {
-        if (parentKey == dummyKey) return key
-
         val parent = findNodeByKey(parentKey)
-        requireNotNull(parent) { "Parent node with key $parentKey not found" }
 
-        return "${parent.nodePath}/$key"
+        return "${parent?.nodePath ?: dummyRoot.nodePath}/$key"
     }
 
     /**
@@ -179,7 +184,7 @@ class ApiResourceTree(override val dummyKey: String = "") :
         val actualSortIndex = if (sort == null || sort > nextAvailableIndex) nextAvailableIndex else sort
 
         // 获取父节点排序值
-        val parentSort = if (parentKey != dummyKey) findNodeByKey(parentKey)?.sort ?: 0L else 0L
+        val parentSort = findNodeByKey(parentKey)?.sort ?: dummyRoot.sort
         // 计算实际排序值: 父节点排序 * 100 + 实际的排序索引
         val actualSort = parentSort * sortBase + actualSortIndex
         val nodePath = generateNodePath(key, parentKey)
@@ -248,28 +253,6 @@ class ApiResourceTree(override val dummyKey: String = "") :
         newParentKey: String,
         newSort: Long?
     ): SortingTreeNode<String, ApiResource.ApiResourceInfo> {
-        /**
-         * 将节点从其父节点分离。
-         */
-        fun detachFromParent(node: SortingTreeNode<String, ApiResource.ApiResourceInfo>) {
-            if (node.parentKey != dummyKey) {
-                findNodeByKey(node.parentKey)?.children?.remove(node)
-            }
-            parentChildMap[node.parentKey]?.remove(node)
-            if (parentChildMap[node.parentKey]?.isEmpty() == true) {
-                parentChildMap.remove(node.parentKey)
-            }
-        }
-
-        /**
-         * 将节点附加到其父节点。
-         */
-        fun attachToParent(node: SortingTreeNode<String, ApiResource.ApiResourceInfo>) {
-            if (node.parentKey != dummyKey) {
-                findNodeByKey(node.parentKey)?.children?.add(node)
-            }
-            parentChildMap.getOrPut(node.parentKey) { mutableListOf() }.add(node)
-        }
 
         /**
          * 递归更新所有子孙节点排序值。
@@ -293,15 +276,16 @@ class ApiResourceTree(override val dummyKey: String = "") :
         val oldSort = node.sort
 
         // 步骤 1: 从旧父节点分离
-        detachFromParent(node)
+        removeNode(node.key)
 
         // 步骤 2: 更新节点自身的核心属性
         // 获取下一个可用的排序索引
         val nextAvailableIndex = calculateNextSort(newParentKey)
 
         // 如果指定的排序号大于下一个可用的排序索引，则使用下一个可用的排序索引
-        val actualSortIndex = if (newSort == null || newSort > nextAvailableIndex) nextAvailableIndex else newSort
-        val newParentAbsoluteSort = if (newParentKey == dummyKey) 0L else findNodeByKey(newParentKey)?.sort ?: 0L
+        val actualSortIndex =
+            if (newSort == null || newSort % sortBase > nextAvailableIndex) nextAvailableIndex else newSort % sortBase
+        val newParentAbsoluteSort = findNodeByKey(newParentKey)?.sort ?: dummyRoot.sort
         node.sort = newParentAbsoluteSort * sortBase + actualSortIndex
         node.parentKey = newParentKey
         node.nodePath = generateNodePath(node.key, newParentKey)
@@ -311,7 +295,7 @@ class ApiResourceTree(override val dummyKey: String = "") :
 
         // 步骤 4: 将节点附加到新父节点，并处理可能产生的排序冲突
         handleSortConflict(newParentKey, node.sort)
-        attachToParent(node)
+        addNode(node.key, node.parentKey, node.data, node.sort)
 
         // 步骤 5: 重新排序原父节点下的兄弟节点
         moveChildrenForward(oldParentKey, getSortIndex(oldSort))
@@ -401,8 +385,17 @@ class ApiResourceTree(override val dummyKey: String = "") :
     }
 
     companion object {
-        fun buildFromResources(rootKey: String = "", resources: Collection<ApiResource>): ApiResourceTree {
-            val tree = ApiResourceTree(rootKey)
+        fun buildFromResources(
+            apiResource: ApiResource = ApiResource(
+                key = "",
+                parentKey = "",
+                nodePath = "",
+                sort = 0L,
+                data = ApiResource.ApiResourceInfo()
+            ),
+            resources: Collection<ApiResource>
+        ): ApiResourceTree {
+            val tree = ApiResourceTree(apiResource)
             resources.forEach { resource ->
                 tree.addNode(
                     key = resource.key,

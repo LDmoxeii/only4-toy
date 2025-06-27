@@ -1,8 +1,8 @@
 import axios from 'axios'
 
 // 获取资源树
-export function getResourceTree(selector) {
-    return axios.post('/resources/tree', null, {params: {selector}})
+export function getResourceTree(selector, rootKey = '') {
+    return axios.post('/resources/tree', null, {params: {selector, rootKey}})
 }
 
 // 获取差异数据
@@ -38,20 +38,6 @@ export function createResource(resource, selector) {
     // 创建资源对象的副本，避免修改原对象
     const resourceToSend = {...resource};
 
-    // 移除relativeSortIndex字段，后端API可能不需要这个字段
-    if ('relativeSortIndex' in resourceToSend) {
-        // 如果sort值为0且存在relativeSortIndex，使用relativeSortIndex作为sort值
-        if (resourceToSend.sort === 0 && resourceToSend.relativeSortIndex) {
-            resourceToSend.sort = resourceToSend.relativeSortIndex;
-        }
-        delete resourceToSend.relativeSortIndex;
-    }
-
-    // 确保sort字段有值
-    if (!resourceToSend.sort && resourceToSend.sort !== 0) {
-        resourceToSend.sort = 1; // 默认值
-    }
-
     return axios.post('/resources', resourceToSend, {
         params: {selector}
     })
@@ -67,13 +53,6 @@ export function deleteResource(id, selector) {
 // 更新资源状态
 export function updateResourceStatus(id, activeStatus, selector) {
     return axios.post(`/resources/${id}/status`, {}, {
-        params: {selector, activeStatus}
-    })
-}
-
-// 批量更新状态
-export function batchUpdateStatus(ids, activeStatus, selector) {
-    return axios.post('/resources/batch/status', ids, {
         params: {selector, activeStatus}
     })
 }
@@ -95,6 +74,13 @@ export function searchResources(query, selector) {
 // 获取可用父节点
 export function getAvailableParents(selector) {
     return axios.post('/resources/parents', null, {
+        params: {selector}
+    })
+}
+
+// 移动节点
+export function moveNode(key, target, selector) {
+    return axios.post(`/resources/move/${key}`, target, {
         params: {selector}
     })
 }
