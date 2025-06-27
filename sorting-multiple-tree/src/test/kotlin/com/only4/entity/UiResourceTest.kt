@@ -20,7 +20,7 @@ class UiResourceTest {
 
         @Test
         fun `创建UiResource对象`() {
-            val resourceInfo = UiResourceInfo(
+            val resourceInfo = UiResource.UiResourceInfo(
                 title = "测试资源",
                 enTitle = "Test Resource",
                 showStatus = true,
@@ -47,7 +47,7 @@ class UiResourceTest {
 
         @Test
         fun `UiResourceInfo数据操作`() {
-            val resourceInfo = UiResourceInfo(
+            val resourceInfo = UiResource.UiResourceInfo(
                 title = "初始标题",
                 enTitle = "Initial Title",
                 showStatus = true,
@@ -73,7 +73,7 @@ class UiResourceTest {
 
         @Test
         fun `添加根节点`() {
-            val rootInfo = UiResourceInfo(title = "根菜单", enTitle = "Root Menu")
+            val rootInfo = UiResource.UiResourceInfo(title = "根菜单", enTitle = "Root Menu")
             val rootNode = uiResourceTree.addNode("root1", "", rootInfo)
 
             Assertions.assertEquals("root1", rootNode.key)
@@ -91,9 +91,9 @@ class UiResourceTest {
 
         @Test
         fun `添加多个根节点`() {
-            val root1 = uiResourceTree.addNode("root1", "", UiResourceInfo(title = "根菜单1"))
-            val root2 = uiResourceTree.addNode("root2", "", UiResourceInfo(title = "根菜单2"))
-            val root3 = uiResourceTree.addNode("root3", "", UiResourceInfo(title = "根菜单3"))
+            val root1 = uiResourceTree.addNode("root1", "", UiResource.UiResourceInfo(title = "根菜单1"))
+            val root2 = uiResourceTree.addNode("root2", "", UiResource.UiResourceInfo(title = "根菜单2"))
+            val root3 = uiResourceTree.addNode("root3", "", UiResource.UiResourceInfo(title = "根菜单3"))
 
             // 验证排序值递增
             Assertions.assertEquals(1L, root1.sort)
@@ -108,9 +108,9 @@ class UiResourceTest {
 
         @Test
         fun `添加子节点`() {
-            val rootInfo = UiResourceInfo(title = "根菜单")
-            val childInfo1 = UiResourceInfo(title = "子菜单1")
-            val childInfo2 = UiResourceInfo(title = "子菜单2")
+            val rootInfo = UiResource.UiResourceInfo(title = "根菜单")
+            val childInfo1 = UiResource.UiResourceInfo(title = "子菜单1")
+            val childInfo2 = UiResource.UiResourceInfo(title = "子菜单2")
 
             val root = uiResourceTree.addRootNode("root1", rootInfo) // sort: 1
             val child1 = uiResourceTree.addNode("child1", "root1", childInfo1) // sort: 1*100+1 = 101
@@ -142,13 +142,17 @@ class UiResourceTest {
 
         @Test
         fun `添加多层级子节点`() {
-            val root = uiResourceTree.addNode("root1", "", UiResourceInfo(title = "根菜单")) // sort: 1
+            val root = uiResourceTree.addNode("root1", "", UiResource.UiResourceInfo(title = "根菜单")) // sort: 1
             val child1 =
-                uiResourceTree.addNode("child1", "root1", UiResourceInfo(title = "子菜单1")) // sort: 1*100+1 = 101
+                uiResourceTree.addNode(
+                    "child1",
+                    "root1",
+                    UiResource.UiResourceInfo(title = "子菜单1")
+                ) // sort: 1*100+1 = 101
             val grandChild1 = uiResourceTree.addNode(
                 "grandChild1",
                 "child1",
-                UiResourceInfo(title = "孙菜单1")
+                UiResource.UiResourceInfo(title = "孙菜单1")
             ) // sort: 101*100+1 = 10101
 
             // 验证排序值
@@ -173,9 +177,9 @@ class UiResourceTest {
 
         @Test
         fun `删除叶子节点`() {
-            val root = uiResourceTree.addNode("root1", "", UiResourceInfo(title = "根菜单"))
-            val child1 = uiResourceTree.addNode("child1", "root1", UiResourceInfo(title = "子菜单1"))
-            val child2 = uiResourceTree.addNode("child2", "root1", UiResourceInfo(title = "子菜单2"))
+            val root = uiResourceTree.addNode("root1", "", UiResource.UiResourceInfo(title = "根菜单"))
+            val child1 = uiResourceTree.addNode("child1", "root1", UiResource.UiResourceInfo(title = "子菜单1"))
+            val child2 = uiResourceTree.addNode("child2", "root1", UiResource.UiResourceInfo(title = "子菜单2"))
 
             // 验证初始状态
             Assertions.assertEquals(2, root.children.size)
@@ -198,10 +202,12 @@ class UiResourceTest {
 
         @Test
         fun `删除带有子节点的节点应递归删除`() {
-            val root = uiResourceTree.addNode("root1", "", UiResourceInfo(title = "根菜单"))
-            val child1 = uiResourceTree.addNode("child1", "root1", UiResourceInfo(title = "子菜单1"))
-            val grandChild1 = uiResourceTree.addNode("grandChild1", "child1", UiResourceInfo(title = "孙菜单1"))
-            val grandChild2 = uiResourceTree.addNode("grandChild2", "child1", UiResourceInfo(title = "孙菜单2"))
+            val root = uiResourceTree.addNode("root1", "", UiResource.UiResourceInfo(title = "根菜单"))
+            val child1 = uiResourceTree.addNode("child1", "root1", UiResource.UiResourceInfo(title = "子菜单1"))
+            val grandChild1 =
+                uiResourceTree.addNode("grandChild1", "child1", UiResource.UiResourceInfo(title = "孙菜单1"))
+            val grandChild2 =
+                uiResourceTree.addNode("grandChild2", "child1", UiResource.UiResourceInfo(title = "孙菜单2"))
 
             // 验证初始状态
             Assertions.assertEquals(1, root.children.size)
@@ -231,10 +237,10 @@ class UiResourceTest {
         @Test
         fun `移动单个节点`() {
             // 创建测试树
-            val root1 = uiResourceTree.addNode("root1", "", UiResourceInfo(title = "根菜单1"))
-            val root2 = uiResourceTree.addNode("root2", "", UiResourceInfo(title = "根菜单2"))
-            val child1 = uiResourceTree.addNode("child1", "root1", UiResourceInfo(title = "子菜单1"))
-            val child2 = uiResourceTree.addNode("child2", "root1", UiResourceInfo(title = "子菜单2"))
+            val root1 = uiResourceTree.addNode("root1", "", UiResource.UiResourceInfo(title = "根菜单1"))
+            val root2 = uiResourceTree.addNode("root2", "", UiResource.UiResourceInfo(title = "根菜单2"))
+            val child1 = uiResourceTree.addNode("child1", "root1", UiResource.UiResourceInfo(title = "子菜单1"))
+            val child2 = uiResourceTree.addNode("child2", "root1", UiResource.UiResourceInfo(title = "子菜单2"))
 
             // 移动节点
             val movedNode = uiResourceTree.moveNode(child1, "root2")
@@ -260,10 +266,11 @@ class UiResourceTest {
         @Test
         fun `移动节点带子节点`() {
             // 创建测试树
-            val root1 = uiResourceTree.addNode("root1", "", UiResourceInfo(title = "根菜单1"))
-            val root2 = uiResourceTree.addNode("root2", "", UiResourceInfo(title = "根菜单2"))
-            val child1 = uiResourceTree.addNode("child1", "root1", UiResourceInfo(title = "子菜单1"))
-            val grandChild1 = uiResourceTree.addNode("grandChild1", "child1", UiResourceInfo(title = "孙菜单1"))
+            val root1 = uiResourceTree.addNode("root1", "", UiResource.UiResourceInfo(title = "根菜单1"))
+            val root2 = uiResourceTree.addNode("root2", "", UiResource.UiResourceInfo(title = "根菜单2"))
+            val child1 = uiResourceTree.addNode("child1", "root1", UiResource.UiResourceInfo(title = "子菜单1"))
+            val grandChild1 =
+                uiResourceTree.addNode("grandChild1", "child1", UiResource.UiResourceInfo(title = "孙菜单1"))
 
             // 移动节点
             val movedNode = uiResourceTree.moveNode(child1, "root2")
@@ -288,14 +295,15 @@ class UiResourceTest {
         @Test
         fun `移动节点到指定排序位置`() {
             // 创建测试树
-            val root = uiResourceTree.addNode("root1", "", UiResourceInfo(title = "根菜单"))
-            val child1 = uiResourceTree.addNode("child1", "root1", UiResourceInfo(title = "子菜单1"))
-            val child2 = uiResourceTree.addNode("child2", "root1", UiResourceInfo(title = "子菜单2"))
-            val child3 = uiResourceTree.addNode("child3", "root1", UiResourceInfo(title = "子菜单3"))
+            val root = uiResourceTree.addNode("root1", "", UiResource.UiResourceInfo(title = "根菜单"))
+            val child1 = uiResourceTree.addNode("child1", "root1", UiResource.UiResourceInfo(title = "子菜单1"))
+            val child2 = uiResourceTree.addNode("child2", "root1", UiResource.UiResourceInfo(title = "子菜单2"))
+            val child3 = uiResourceTree.addNode("child3", "root1", UiResource.UiResourceInfo(title = "子菜单3"))
 
             // 创建另一个根节点
-            val root2 = uiResourceTree.addNode("root2", "", UiResourceInfo(title = "根菜单2"))
-            val root2Child1 = uiResourceTree.addNode("root2Child1", "root2", UiResourceInfo(title = "根2子菜单1"))
+            val root2 = uiResourceTree.addNode("root2", "", UiResource.UiResourceInfo(title = "根菜单2"))
+            val root2Child1 =
+                uiResourceTree.addNode("root2Child1", "root2", UiResource.UiResourceInfo(title = "根2子菜单1"))
 
             // 移动节点到指定位置
             val movedNode = uiResourceTree.moveNode(child2, "root2", 2L)
@@ -315,11 +323,11 @@ class UiResourceTest {
         @Test
         fun `批量移动节点`() {
             // 创建测试树
-            val root1 = uiResourceTree.addNode("root1", "", UiResourceInfo(title = "根菜单1"))
-            val root2 = uiResourceTree.addNode("root2", "", UiResourceInfo(title = "根菜单2"))
-            val child1 = uiResourceTree.addNode("child1", "root1", UiResourceInfo(title = "子菜单1"))
-            val child2 = uiResourceTree.addNode("child2", "root1", UiResourceInfo(title = "子菜单2"))
-            val child3 = uiResourceTree.addNode("child3", "root1", UiResourceInfo(title = "子菜单3"))
+            val root1 = uiResourceTree.addNode("root1", "", UiResource.UiResourceInfo(title = "根菜单1"))
+            val root2 = uiResourceTree.addNode("root2", "", UiResource.UiResourceInfo(title = "根菜单2"))
+            val child1 = uiResourceTree.addNode("child1", "root1", UiResource.UiResourceInfo(title = "子菜单1"))
+            val child2 = uiResourceTree.addNode("child2", "root1", UiResource.UiResourceInfo(title = "子菜单2"))
+            val child3 = uiResourceTree.addNode("child3", "root1", UiResource.UiResourceInfo(title = "子菜单3"))
 
             // 批量移动节点
             val movedNodes = uiResourceTree.moveNodes(listOf("child1", "child3"), "root2")
@@ -353,9 +361,10 @@ class UiResourceTest {
         @Test
         fun `移动节点导致循环依赖时应抛出异常`() {
             // 创建测试树
-            val root = uiResourceTree.addNode("root1", "", UiResourceInfo(title = "根菜单"))
-            val child = uiResourceTree.addNode("child1", "root1", UiResourceInfo(title = "子菜单"))
-            val grandChild = uiResourceTree.addNode("grandChild1", "child1", UiResourceInfo(title = "孙菜单"))
+            val root = uiResourceTree.addNode("root1", "", UiResource.UiResourceInfo(title = "根菜单"))
+            val child = uiResourceTree.addNode("child1", "root1", UiResource.UiResourceInfo(title = "子菜单"))
+            val grandChild =
+                uiResourceTree.addNode("grandChild1", "child1", UiResource.UiResourceInfo(title = "孙菜单"))
 
             // 尝试将父节点移动到子节点下
             val exception = Assertions.assertThrows(IllegalArgumentException::class.java) {
@@ -373,11 +382,12 @@ class UiResourceTest {
         @Test
         fun `扁平化树结构`() {
             // 创建测试树
-            val root1 = uiResourceTree.addNode("root1", "", UiResourceInfo(title = "根菜单1"))
-            val root2 = uiResourceTree.addNode("root2", "", UiResourceInfo(title = "根菜单2"))
-            val child1 = uiResourceTree.addNode("child1", "root1", UiResourceInfo(title = "子菜单1"))
-            val child2 = uiResourceTree.addNode("child2", "root1", UiResourceInfo(title = "子菜单2"))
-            val grandChild1 = uiResourceTree.addNode("grandChild1", "child1", UiResourceInfo(title = "孙菜单1"))
+            val root1 = uiResourceTree.addNode("root1", "", UiResource.UiResourceInfo(title = "根菜单1"))
+            val root2 = uiResourceTree.addNode("root2", "", UiResource.UiResourceInfo(title = "根菜单2"))
+            val child1 = uiResourceTree.addNode("child1", "root1", UiResource.UiResourceInfo(title = "子菜单1"))
+            val child2 = uiResourceTree.addNode("child2", "root1", UiResource.UiResourceInfo(title = "子菜单2"))
+            val grandChild1 =
+                uiResourceTree.addNode("grandChild1", "child1", UiResource.UiResourceInfo(title = "孙菜单1"))
 
             // 扁平化树结构
             val flattenedTree = uiResourceTree.flattenTree()
@@ -399,7 +409,12 @@ class UiResourceTest {
             val node = uiResourceTree.addNode(
                 "test1",
                 "",
-                UiResourceInfo(title = "原标题", enTitle = "Original Title", showStatus = true, activeStatus = true)
+                UiResource.UiResourceInfo(
+                    title = "原标题",
+                    enTitle = "Original Title",
+                    showStatus = true,
+                    activeStatus = true
+                )
             )
 
             // 更新节点数据
@@ -447,35 +462,35 @@ class UiResourceTest {
                     parentKey = "",
                     nodePath = "root1",
                     sort = 1L,
-                    data = UiResourceInfo(title = "根菜单1")
+                    data = UiResource.UiResourceInfo(title = "根菜单1")
                 ),
                 UiResource(
                     key = "root2",
                     parentKey = "",
                     nodePath = "root2",
                     sort = 2L,
-                    data = UiResourceInfo(title = "根菜单2")
+                    data = UiResource.UiResourceInfo(title = "根菜单2")
                 ),
                 UiResource(
                     key = "child1",
                     parentKey = "root1",
                     nodePath = "root1/child1",
                     sort = 101L,
-                    data = UiResourceInfo(title = "子菜单1")
+                    data = UiResource.UiResourceInfo(title = "子菜单1")
                 ),
                 UiResource(
                     key = "child2",
                     parentKey = "root1",
                     nodePath = "root1/child2",
                     sort = 102L,
-                    data = UiResourceInfo(title = "子菜单2")
+                    data = UiResource.UiResourceInfo(title = "子菜单2")
                 ),
                 UiResource(
                     key = "grandChild1",
                     parentKey = "child1",
                     nodePath = "root1/child1/grandChild1",
                     sort = 10101L,
-                    data = UiResourceInfo(title = "孙菜单1")
+                    data = UiResource.UiResourceInfo(title = "孙菜单1")
                 )
             )
 

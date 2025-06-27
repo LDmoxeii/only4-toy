@@ -81,7 +81,8 @@ class ApiResource() : SortingTreeNode<String, ApiResource.ApiResourceInfo> {
     )
 }
 
-class ApiResourceTree : AbstractSortingMultipleTree<String, ApiResource.ApiResourceInfo>("") {
+class ApiResourceTree(override val dummyKey: String = "") :
+    AbstractSortingMultipleTree<String, ApiResource.ApiResourceInfo>(dummyKey) {
     override fun calculateNextSort(parentKey: String): Long {
         val children = parentChildMap[parentKey] ?: return 1L
 
@@ -400,8 +401,8 @@ class ApiResourceTree : AbstractSortingMultipleTree<String, ApiResource.ApiResou
     }
 
     companion object {
-        fun buildFromResources(resources: Collection<ApiResource>): ApiResourceTree {
-            val tree = ApiResourceTree()
+        fun buildFromResources(rootKey: String = "", resources: Collection<ApiResource>): ApiResourceTree {
+            val tree = ApiResourceTree(rootKey)
             resources.forEach { resource ->
                 tree.addNode(
                     key = resource.key,

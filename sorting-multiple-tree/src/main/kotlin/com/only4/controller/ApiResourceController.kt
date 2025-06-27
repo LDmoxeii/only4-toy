@@ -1,18 +1,19 @@
 package com.only4.controller
 
+import com.only4.config.ApiResourceTableNameHandler
 import com.only4.entity.ApiResource
 import com.only4.service.ApiResourceService
-import com.only4.synchronizer.SortingTreeSynchronizer
 import com.only4.synchronizer.SortingTreeSynchronizer.SyncResult
+import com.only4.tree.SortingMultipleTree
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.util.concurrent.CompletableFuture
 
 @RestController
 @RequestMapping("/api/resources")
 class ApiResourceController(
     private val apiResourceService: ApiResourceService,
-    private val apiResourceSynchronizer: SortingTreeSynchronizer<String, ApiResource.ApiResourceInfo>
 ) {
 
     /**
@@ -20,10 +21,55 @@ class ApiResourceController(
      */
     @PostMapping("/tree")
     fun getResourceTree(
-        @RequestParam selector: Int
+        @RequestParam selector: Int,
+        @RequestParam(required = false) rootKey: String = ""
     ): ResponseEntity<List<ApiResource>> {
-        val tree = apiResourceService.getTree(selector)
-        return ResponseEntity(tree.flattenTree().map { it as ApiResource }, HttpStatus.OK)
+        try {
+            // 设置表选择器
+            ApiResourceTableNameHandler.setTableSelector(selector)
+            val tree = apiResourceService.getTree(rootKey)
+            return ResponseEntity(tree.flattenTree().map { it as ApiResource }, HttpStatus.OK)
+
+        } finally {
+            // 清理线程变量
+            ApiResourceTableNameHandler.clear()
+        }
+
+    }
+
+    private fun getSourceAndTargetTrees(
+        sourceSelector: Int,
+        targetSelector: Int
+    ): Pair<SortingMultipleTree<String, ApiResource.ApiResourceInfo>, SortingMultipleTree<String, ApiResource.ApiResourceInfo>> {
+        // 获取源表树
+        val sourceTask = CompletableFuture.supplyAsync {
+            try {
+                // 设置表选择器
+                ApiResourceTableNameHandler.setTableSelector(sourceSelector)
+                apiResourceService.getTree()
+            } finally {
+                // 清理线程变量
+                ApiResourceTableNameHandler.clear()
+            }
+        }
+
+        // 获取目标表树
+        val targetTask = CompletableFuture.supplyAsync {
+            try {
+                // 设置表选择器
+                ApiResourceTableNameHandler.setTableSelector(targetSelector)
+                apiResourceService.getTree()
+            } finally {
+                // 清理线程变量
+                ApiResourceTableNameHandler.clear()
+            }
+        }
+
+        // 等待两个任务完成
+        CompletableFuture.allOf(sourceTask, targetTask).join()
+        val sourceTree = sourceTask.get()
+        val targetTree = targetTask.get()
+        return Pair(sourceTree, targetTree)
     }
 
     /**
@@ -34,16 +80,14 @@ class ApiResourceController(
         @RequestParam sourceSelector: Int,
         @RequestParam targetSelector: Int,
     ): ResponseEntity<List<SyncResult<String, ApiResource.ApiResourceInfo>>> {
-        // 获取源表树
-        val sourceTree = apiResourceService.getTree(sourceSelector)
-
-        // 获取目标表树
-        val targetTree = apiResourceService.getTree(targetSelector)
+        // 获取源和目标表树
+        val (sourceTree, targetTree) = getSourceAndTargetTrees(sourceSelector, targetSelector)
 
         // 计算差异
-        val differences = apiResourceSynchronizer.calculateDifferences(sourceTree, targetTree)
+        val differences = apiResourceService.calculateDifferences(sourceTree, targetTree)
         return ResponseEntity(differences, HttpStatus.OK)
     }
+
 
     /**
      * 同步资源
@@ -54,14 +98,11 @@ class ApiResourceController(
         @RequestParam targetSelector: Int,
         @RequestBody resources: List<String>
     ): ResponseEntity<String> {
-        // 获取源表树
-        val sourceTree = apiResourceService.getTree(sourceSelector)
-
-        // 获取目标表树
-        val targetTree = apiResourceService.getTree(targetSelector)
+        // 获取源和目标表树
+        val (sourceTree, targetTree) = getSourceAndTargetTrees(sourceSelector, targetSelector)
 
         // 同步两个树之间的数据
-        val syncResults = apiResourceSynchronizer.synchronizeTrees(
+        val syncResults = apiResourceService.synchronizeTrees(
             sourceTree = sourceTree,
             targetTree = targetTree,
             resources
@@ -85,17 +126,14 @@ class ApiResourceController(
         @RequestParam targetSelector: Int,
         @RequestBody resources: List<String>
     ): ResponseEntity<List<SyncResult<String, ApiResource.ApiResourceInfo>>> {
-        // 获取源表树
-        val sourceTree = apiResourceService.getTree(sourceSelector)
+        // 获取源和目标表树
+        val (sourceTree, targetTree) = getSourceAndTargetTrees(sourceSelector, targetSelector)
 
-        // 获取目标表树
-        val targetTree = apiResourceService.getTree(targetSelector)
-
-        // 计算同步操作但不应用
-        val syncResults = apiResourceSynchronizer.synchronizeTrees(
+        // 同步两个树之间的数据
+        val syncResults = apiResourceService.synchronizeTrees(
             sourceTree = sourceTree,
             targetTree = targetTree,
-            resources,
+            resources
         )
 
         return ResponseEntity(syncResults, HttpStatus.OK)
@@ -110,8 +148,15 @@ class ApiResourceController(
         @RequestParam selector: Int,
         @RequestBody resource: ApiResource
     ): ResponseEntity<ApiResource> {
-        val updatedResource = apiResourceService.updateResource(resource, selector)
-        return ResponseEntity(updatedResource, HttpStatus.OK)
+        try {
+            // 设置表选择器
+            ApiResourceTableNameHandler.setTableSelector(selector)
+            val updatedResource = apiResourceService.updateResource(resource)
+            return ResponseEntity(updatedResource, HttpStatus.OK)
+        } finally {
+            // 清理线程变量
+            ApiResourceTableNameHandler.clear()
+        }
     }
 
     /**
@@ -122,46 +167,56 @@ class ApiResourceController(
         @RequestParam selector: Int,
         @RequestBody resource: ApiResource
     ): ResponseEntity<ApiResource> {
-        val createdResource = apiResourceService.createResource(resource, selector)
-        return ResponseEntity(createdResource, HttpStatus.CREATED)
+        try {
+            // 设置表选择器
+            ApiResourceTableNameHandler.setTableSelector(selector)
+            val createdResource = apiResourceService.createResource(resource)
+            return ResponseEntity(createdResource, HttpStatus.CREATED)
+        } finally {
+            // 清理线程变量
+            ApiResourceTableNameHandler.clear()
+        }
+
     }
 
     /**
      * 删除资源
      */
-    @PostMapping("delete/{id}")
+    @PostMapping("delete/{key}")
     fun deleteResource(
-        @PathVariable id: String,
+        @PathVariable key: String,
         @RequestParam selector: Int
     ): ResponseEntity<Void> {
-        apiResourceService.deleteResource(id, selector)
-        return ResponseEntity(HttpStatus.NO_CONTENT)
+        try {
+            // 设置表选择器
+            ApiResourceTableNameHandler.setTableSelector(selector)
+            apiResourceService.deleteResource(key)
+            return ResponseEntity(HttpStatus.NO_CONTENT)
+        } finally {
+            // 清理线程变量
+            ApiResourceTableNameHandler.clear()
+        }
+
     }
 
     /**
      * 更新资源状态（启用/停用）
      */
-    @PatchMapping("/{id}/status")
+    @PatchMapping("/{key}/status")
     fun updateResourceStatus(
-        @PathVariable id: String,
+        @PathVariable key: String,
         @RequestParam selector: Int,
         @RequestParam activeStatus: Boolean
     ): ResponseEntity<Int> {
-        val updatedResource = apiResourceService.updateResourceStatus(id, activeStatus, selector)
-        return ResponseEntity(updatedResource, HttpStatus.OK)
-    }
-
-    /**
-     * 批量更新资源状态
-     */
-    @PatchMapping("/batch/status")
-    fun batchUpdateStatus(
-        @RequestParam selector: Int,
-        @RequestParam activeStatus: Boolean,
-        @RequestBody ids: List<String>
-    ): ResponseEntity<Int> {
-        val count = apiResourceService.batchUpdateStatus(ids, activeStatus, selector)
-        return ResponseEntity(count, HttpStatus.OK)
+        try {
+            // 设置表选择器
+            ApiResourceTableNameHandler.setTableSelector(selector)
+            val updatedResource = apiResourceService.updateResourceStatus(key, activeStatus)
+            return ResponseEntity(updatedResource, HttpStatus.OK)
+        } finally {
+            // 清理线程变量
+            ApiResourceTableNameHandler.clear()
+        }
     }
 
     /**
@@ -170,10 +225,17 @@ class ApiResourceController(
     @PostMapping("/batch/delete")
     fun batchDelete(
         @RequestParam selector: Int,
-        @RequestBody ids: List<String>
+        @RequestBody keys: List<String>
     ): ResponseEntity<Boolean> {
-        val result = apiResourceService.batchDelete(ids, selector)
-        return ResponseEntity(result, HttpStatus.OK)
+        try {
+            // 设置表选择器
+            ApiResourceTableNameHandler.setTableSelector(selector)
+            val result = apiResourceService.batchDelete(keys)
+            return ResponseEntity(result, HttpStatus.OK)
+        } finally {
+            // 清理线程变量
+            ApiResourceTableNameHandler.clear()
+        }
     }
 
     /**
@@ -184,8 +246,15 @@ class ApiResourceController(
         @RequestParam selector: Int,
         @RequestParam query: String
     ): ResponseEntity<List<ApiResource>> {
-        val resources = apiResourceService.searchResources(query, selector)
-        return ResponseEntity(resources, HttpStatus.OK)
+        try {
+            // 设置表选择器
+            ApiResourceTableNameHandler.setTableSelector(selector)
+            val resources = apiResourceService.searchResources(query)
+            return ResponseEntity(resources, HttpStatus.OK)
+        } finally {
+            // 清理线程变量
+            ApiResourceTableNameHandler.clear()
+        }
     }
 
     /**
@@ -195,16 +264,23 @@ class ApiResourceController(
     fun getAvailableParents(
         @RequestParam selector: Int,
     ): ResponseEntity<List<Map<String, Any>>> {
-        val parents = apiResourceService.getAvailableParents(selector)
-        // 转换为前端下拉框友好的格式
-        val result = parents.map {
-            mapOf(
-                "value" to it.key,
-                "label" to it.data.title,
-                "path" to it.nodePath,
-                "sort" to it.sort,
-            )
+        try {
+            // 设置表选择器
+            ApiResourceTableNameHandler.setTableSelector(selector)
+            val parents = apiResourceService.getAvailableParents()
+            // 转换为前端下拉框友好的格式
+            val result = parents.map {
+                mapOf(
+                    "value" to it.key,
+                    "label" to it.data.title,
+                    "path" to it.nodePath,
+                    "sort" to it.sort,
+                )
+            }
+            return ResponseEntity(result, HttpStatus.OK)
+        } finally {
+            // 清理线程变量
+            ApiResourceTableNameHandler.clear()
         }
-        return ResponseEntity(result, HttpStatus.OK)
     }
 }

@@ -13,23 +13,27 @@ import com.only4.tree.SortingTreeNode
 import org.springframework.stereotype.Service
 
 @Service
-class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), ApiResourceService {
+class ApiResourceServiceImpl(
+    private val apiResourceSynchronizer: SortingTreeSynchronizer<String, ApiResource.ApiResourceInfo>
+) : ServiceImpl<ApiResourceMapper, ApiResource>(), ApiResourceService {
 
-    override fun getTree(tableSelector: Int): SortingMultipleTree<String, ApiResource.ApiResourceInfo> {
-
-        try {
-            // 设置表选择器
-            ApiResourceTableNameHandler.setTableSelector(tableSelector)
-
-            // 获取所有根节点
-            val all = this.findAllFromTable(tableSelector)
-
-            return ApiResourceTree.buildFromResources(all)
-        } finally {
-            // 清理线程变量
-            ApiResourceTableNameHandler.clear()
+    override fun getTree(rootKey: String): SortingMultipleTree<String, ApiResource.ApiResourceInfo> {
+        if (rootKey == "") {
+            // 如果没有指定根节点，则获取所有资源
+            return ApiResourceTree.buildFromResources(resources = this.list())
         }
+        val root = getById(rootKey)
+        val descendants = this.list(
+            QueryWrapper<ApiResource>()
+                .likeLeft("nodePath", root.nodePath)
+        ).filter { it.nodePath != root.nodePath }
+
+        return ApiResourceTree.buildFromResources(
+            rootKey = root.key,
+            resources = descendants
+        )
     }
+
 
     override fun applySyncResults(
         result: Collection<SortingTreeSynchronizer.SyncResult<String, ApiResource.ApiResourceInfo>>,
@@ -78,199 +82,126 @@ class ApiResourceServiceImpl : ServiceImpl<ApiResourceMapper, ApiResource>(), Ap
     }
 
     /**
-     * 获取指定表中的所有资源
-     */
-    fun findAllFromTable(tableSelector: Int): List<ApiResource> {
-        try {
-            ApiResourceTableNameHandler.setTableSelector(tableSelector)
-            return baseMapper.findAllFromTable(tableSelector)
-        } finally {
-            ApiResourceTableNameHandler.clear()
-        }
-    }
-
-    /**
      * 更新资源
      */
-    override fun updateResource(resource: ApiResource, tableSelector: Int): ApiResource {
-        try {
-            ApiResourceTableNameHandler.setTableSelector(tableSelector)
-
-            // 获取当前树
-            val tree = getTree(tableSelector)
-
-            // 查找节点
-            val node = tree.findNodeByKey(resource.key) as? ApiResource
-                ?: throw IllegalArgumentException("Resource with id ${resource.key} not found")
-
-            // 更新数据
-            node.title = resource.title
-            node.enTitle = resource.enTitle
-            node.showStatus = resource.showStatus
-
-            // 保存到数据库
-            saveOrUpdate(node)
-
-            return node
-        } finally {
-            ApiResourceTableNameHandler.clear()
-        }
+    override fun updateResource(resource: ApiResource): ApiResource {
+        // 保存到数据库
+        saveOrUpdate(resource)
+        return resource
     }
 
     /**
      * 创建新资源
      */
-    override fun createResource(resource: ApiResource, tableSelector: Int): ApiResource {
-        try {
-            ApiResourceTableNameHandler.setTableSelector(tableSelector)
+    override fun createResource(resource: ApiResource): ApiResource {
+        // 获取当前树
+        val tree = getTree(resource.parentKey)
 
-            // 获取当前树
-            val tree = getTree(tableSelector)
+        // 添加到树中
+        val node = tree.addNode(
+            key = resource.key,
+            parentKey = resource.parentKey,
+            data = resource.data,
+            sort = resource.sort
+        ) as ApiResource
 
-            // 设置表选择器
-            resource.tableSelector = tableSelector
+        saveBatch(tree.flattenTree().map { it as ApiResource })
 
-            // 添加到树中
-            val node = tree.addNode(
-                key = resource.key,
-                parentKey = resource.parentKey,
-                data = resource.data,
-                sort = resource.sort
-            ) as ApiResource
-
-            saveBatch(tree.flattenTree().map { it as ApiResource })
-
-            return node
-        } finally {
-            ApiResourceTableNameHandler.clear()
-        }
+        return node
     }
 
     /**
      * 删除资源
      */
-    override fun deleteResource(id: String, tableSelector: Int): Boolean {
-        try {
-            ApiResourceTableNameHandler.setTableSelector(tableSelector)
+    override fun deleteResource(key: String): Boolean {
+        // 获取当前树
+        val resource = getById(key)
+        val originalTree = getTree(resource.parentKey)
+        val tree = originalTree
 
-            // 获取当前树
-            val originalTree = getTree(tableSelector)
-            val tree = getTree(tableSelector)
+        tree.removeNode(key)
+        val deletedKey = originalTree.flattenTree()
+            .filter { tree.findNodeByKey(it.key) == null }
+            .map { it.key }
+        // 删除数据库中的资源
+        removeByIds(deletedKey)
+        // 更新顺序
+        saveOrUpdateBatch(tree.flattenTree().map { it as ApiResource })
 
-            tree.removeNode(id)
-            val deletedKey = originalTree.flattenTree()
-                .filter { tree.findNodeByKey(it.key) == null }
-                .map { it.key }
-            batchDelete(deletedKey, tableSelector)
-            saveOrUpdateBatch(tree.flattenTree().map { it as ApiResource })
-
-            return false
-        } finally {
-            ApiResourceTableNameHandler.clear()
-        }
+        return false
     }
 
     /**
      * 更新资源状态
      */
-    override fun updateResourceStatus(id: String, activeStatus: Boolean, tableSelector: Int): Int {
-        try {
-            ApiResourceTableNameHandler.setTableSelector(tableSelector)
+    override fun updateResourceStatus(key: String, activeStatus: Boolean): Int {
+        val resource = getById(key) ?: throw IllegalArgumentException("Resource with id $key not found")
+        // 获取当前树
+        val tree = getTree(key)
 
-            // 获取当前树
-            val tree = getTree(tableSelector)
+        // 更新状态
+        val descendants = tree.flattenTree()
+        (descendants + resource)
+            .forEach { it.data.activeStatus = activeStatus }
 
-            // 查找节点
-            val node = tree.findNodeByKey(id) as? ApiResource
-                ?: throw IllegalArgumentException("Resource with id $id not found")
+        // 保存到数据库
+        saveOrUpdateBatch(descendants.map { it as ApiResource } + resource)
 
-            val descendants = tree.getDescendants(node.key)
-
-            // 更新状态
-            (descendants + node)
-                .forEach { it.data.activeStatus = activeStatus }
-
-            // 保存到数据库
-            saveOrUpdateBatch(descendants.map { it as ApiResource } + node)
-
-            return (descendants + node).size
-        } finally {
-            ApiResourceTableNameHandler.clear()
-        }
-    }
-
-    /**
-     * 批量更新状态
-     */
-    override fun batchUpdateStatus(ids: List<String>, activeStatus: Boolean, tableSelector: Int): Int {
-        if (ids.isEmpty()) return 0
-        try {
-            var total = 0
-            ApiResourceTableNameHandler.setTableSelector(tableSelector)
-
-            ids.forEach { total += updateResourceStatus(it, activeStatus, tableSelector) }
-            return total
-        } finally {
-            ApiResourceTableNameHandler.clear()
-        }
+        return (descendants + resource).size
     }
 
     /**
      * 批量删除
      */
-    override fun batchDelete(ids: List<String>, tableSelector: Int): Boolean {
+    override fun batchDelete(ids: List<String>): Boolean {
         if (ids.isEmpty()) return true
 
-        try {
-            ApiResourceTableNameHandler.setTableSelector(tableSelector)
+        ids.forEach { deleteResource(it) }
 
-            ids.forEach { deleteResource(it, tableSelector) }
-
-            return true
-        } finally {
-            ApiResourceTableNameHandler.clear()
-        }
+        return true
     }
 
     /**
      * 搜索资源
      */
-    override fun searchResources(query: String, tableSelector: Int): List<ApiResource> {
-        try {
-            ApiResourceTableNameHandler.setTableSelector(tableSelector)
+    override fun searchResources(query: String): List<ApiResource> {
+        // 构建搜索条件
+        val wrapper = QueryWrapper<ApiResource>()
+            .like("title", query)
+            .or()
+            .like("en_title", query)
+            .or()
+            .like("id", query)
 
-            // 构建搜索条件
-            val wrapper = QueryWrapper<ApiResource>()
-                .like("title", query)
-                .or()
-                .like("en_title", query)
-                .or()
-                .like("id", query)
-
-            return list(wrapper)
-        } finally {
-            ApiResourceTableNameHandler.clear()
-        }
+        return list(wrapper)
     }
 
     /**
      * 获取可用的父节点列表
      */
-    override fun getAvailableParents(tableSelector: Int): List<SortingTreeNode<String, ApiResource.ApiResourceInfo>> {
-        try {
-            ApiResourceTableNameHandler.setTableSelector(tableSelector)
-
+    override fun getAvailableParents(rootKey: String): List<SortingTreeNode<String, ApiResource.ApiResourceInfo>> {
             // 获取当前树
-            val tree = getTree(tableSelector)
+        val tree = getTree(rootKey)
 
             // 获取所有节点
             val allNodes = tree.flattenTree()
 
             return allNodes.map { it as ApiResource }
                 .filter { it.activeStatus }
+    }
 
-        } finally {
-            ApiResourceTableNameHandler.clear()
-        }
+    override fun calculateDifferences(
+        sourceTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
+        targetTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>
+    ): List<SortingTreeSynchronizer.SyncResult<String, ApiResource.ApiResourceInfo>> {
+        return apiResourceSynchronizer.calculateDifferences(sourceTree, targetTree)
+    }
+
+    override fun synchronizeTrees(
+        sourceTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
+        targetTree: SortingMultipleTree<String, ApiResource.ApiResourceInfo>,
+        resources: List<String>
+    ): List<SortingTreeSynchronizer.SyncResult<String, ApiResource.ApiResourceInfo>> {
+        return apiResourceSynchronizer.synchronizeTrees(sourceTree, targetTree)
     }
 }
