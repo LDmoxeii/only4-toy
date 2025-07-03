@@ -1,7 +1,7 @@
 package com.only4.algorithm.leetcode
 
 /**
- * 207. 课程表
+ * [207. 课程表](https://leetcode.cn/problems/course-schedule/?envType=study-plan-v2&envId=top-100-liked)
  *
  * 你这个学期必须选修 numCourses 门课程，记为 0 到 numCourses - 1 。
  * 在选修某些课程之前需要一些先修课程。先修课程按数组 prerequisites 给出，其中 prerequisites[i] = [ai, bi] ，表示如果要学习课程 ai 则 必须 先学习课程 bi 。
@@ -25,7 +25,7 @@ fun canFinish(numCourses: Int, prerequisites: Array<IntArray>): Boolean {
     // 构建邻接表表示的有向图，key为课程，value为该课程的所有先修课程
     val graph = prerequisites.groupBy({ it[0] }, { it[1] })
         .withDefault { emptyList() }
-    
+
     // 用于标记节点状态：0=未访问，1=访问中，2=已完成访问
     val states = IntArray(numCourses)
 
@@ -33,7 +33,7 @@ fun canFinish(numCourses: Int, prerequisites: Array<IntArray>): Boolean {
     fun dfs(course: Int): Boolean {
         // 标记当前节点为"访问中"
         states[course] = 1
-        
+
         // 遍历当前课程的所有依赖课程
         for (prerequisite in graph.getValue(course)) {
             when (states[prerequisite]) {
@@ -42,7 +42,7 @@ fun canFinish(numCourses: Int, prerequisites: Array<IntArray>): Boolean {
                 else -> if (!dfs(prerequisite)) return false  // 递归检查依赖课程
             }
         }
-        
+
         // 标记当前节点为"已完成访问"
         states[course] = 2
         return true
