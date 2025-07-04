@@ -1,16 +1,12 @@
 plugins {
-    kotlin("jvm") version "2.1.10"
-}
-
-group = "com.only4"
-version = "unspecified"
-
-repositories {
-    mavenCentral()
+    // Apply the shared build logic from a convention plugin.
+    // The shared code is located in `buildSrc/src/main/kotlin/kotlin-jvm.gradle.kts`.
+    id("buildsrc.convention.kotlin-jvm")
+    // Apply Kotlin Serialization plugin from `gradle/libs.versions.toml`.
+    alias(libs.plugins.kotlinPluginSerialization)
 }
 
 dependencies {
-    testImplementation(kotlin("test"))
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
     implementation("org.apache.tomcat.embed:tomcat-embed-core:11.0.5")
     // https://mvnrepository.com/artifact/org.slf4j/jul-to-slf4j
@@ -19,11 +15,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.5.18")
     // https://mvnrepository.com/artifact/com.alibaba.fastjson2/fastjson2
     implementation("com.alibaba.fastjson2:fastjson2:2.0.56")
-}
 
-tasks.test {
-    useJUnitPlatform()
-}
-kotlin {
-    jvmToolchain(17)
+    // 测试依赖
+    testImplementation(kotlin("test"))
 }

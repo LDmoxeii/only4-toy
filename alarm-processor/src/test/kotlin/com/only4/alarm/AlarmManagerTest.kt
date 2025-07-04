@@ -19,7 +19,7 @@ class AlarmManagerTest {
             ```
             Graylog告警  
             前往oncall平台处理告警信息​​前往Graylog平台查看日志详情​​  
-            开始时间：2025-06-13 18:00:21  
+            开始时间：2025-06-13 18:00:21  
             告警应用：qifu-saas-gateway  
             环境：prod  
             描述：[fa8f6ddb-58820]  500 Server Error for HTTP POST "/qifu-saas-bpmn/instance/detail"  
@@ -30,7 +30,7 @@ class AlarmManagerTest {
             ```
             Graylog告警  
             前往oncall平台处理告警信息​​前往Graylog平台查看日志详情​​  
-            开始时间：2025-06-13 17:22:26  
+            开始时间：2025-06-13 17:22:26  
             告警应用：qifu-saas-pcs  
             环境：prod  
             描述：测试描述

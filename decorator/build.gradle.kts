@@ -1,22 +1,19 @@
 plugins {
-    kotlin("jvm") version "2.1.10"
-}
+    // Apply the shared build logic from a convention plugin.
+    // The shared code is located in `buildSrc/src/main/kotlin/kotlin-jvm.gradle.kts`.
+    id("buildsrc.convention.kotlin-jvm")
+    // Apply Kotlin Serialization plugin from `gradle/libs.versions.toml`.
+    alias(libs.plugins.kotlinPluginSerialization)
 
-group = "com.only4"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
+    kotlin("plugin.spring") version "1.8.22"
+    id("org.springframework.boot") version "3.1.4"
+    id("io.spring.dependency-management") version "1.1.3"
 }
 
 dependencies {
-    testImplementation(kotlin("test"))
-// https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-web
-    implementation("org.springframework.boot:spring-boot-starter-web:3.4.4")}
+    // Spring Boot 依赖
+    implementation("org.springframework.boot:spring-boot-starter-web")
 
-tasks.test {
-    useJUnitPlatform()
-}
-kotlin {
-    jvmToolchain(17)
+    // 测试依赖
+    testImplementation(kotlin("test"))
 }
