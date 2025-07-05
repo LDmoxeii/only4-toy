@@ -1,0 +1,28 @@
+### 环境变量设置
+@orderId = 2
+
+### 根据ID查询订单
+GET http://localhost:8080/order/getById?id={{orderId}}
+
+### 创建订单
+POST http://localhost:8080/order/create
+Content-Type: application/json
+
+{
+  "orderNo": "ORD{{$random.integer(1000, 9999)}}",
+  "status": 1,
+  "name": "测试订单",
+  "price": 199.99
+}
+
+### 对订单进行支付
+POST http://localhost:8080/order/pay?id={{orderId}}
+
+### 对订单进行发货
+POST http://localhost:8080/order/deliver?id={{orderId}}
+
+### 对订单进行确认收货
+POST http://localhost:8080/order/receive?id={{orderId}}
+
+### 订单拒收
+POST http://localhost:8080/order/reject?id={{orderId}}

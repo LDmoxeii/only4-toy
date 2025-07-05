@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: state-machine
+  # 配置数据源
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://localhost:3306/state_machine?serverTimezone=UTC&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+
+  data:
+    redis:
+      database: 0
+      host: localhost
+      password:
+      port: 6379
+      timeout: 0
+      jedis:
+        pool:
+          enabled: true
+          max-active: 8
+          max-idle: 8
+          max-wait: -1ms
+          min-idle: 0
+
+# Mybatis-plus相关配置
+mybatis-plus:
+  type-aliases-package: com.only4.machine.state.entity
+  # xml扫描，多个目录用逗号或者分号分隔（告诉 Mapper 所对应的 XML 文件位置）
+  mapper-locations: classpath:mybatis/mapper/*.xml
